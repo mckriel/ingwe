@@ -1,10 +1,13 @@
 'use client';
 
-import PropertyFilter from "@/app/ui/component/property-filter";
+import PropertyListingGrid from "@/app/ui/component/property-listing-grid";
+import PropertyFilterBar from "../ui/component/property-filter-bar";
 
 export default function Page() {
     return (
-        // <PropertyFilter />
-        <p>BUYING</p>
+        <>
+            <PropertyFilterBar />
+            <PropertyListingGrid />
+        </>
     );
 }

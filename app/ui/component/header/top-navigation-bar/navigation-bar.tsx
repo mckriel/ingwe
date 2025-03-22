@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import NavItem from "@/app/ui/component/top-navigation-bar/nav-item";
+import NavItem from "@/app/ui/component/header/top-navigation-bar/nav-item";
 import Image from "next/image";
 import Link from "next/link";
 

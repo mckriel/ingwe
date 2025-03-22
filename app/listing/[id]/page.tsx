@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import PropertyHeader from "@/app/ui/component/listing/property-header";
 import PropertyGallery from "@/app/ui/component/listing/property-gallery";
 import PropertyQuickStats from "@/app/ui/component/listing/property-quick-stats";

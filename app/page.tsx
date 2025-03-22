@@ -1,9 +1,5 @@
 'use client';
 
-import { useState } from "react";
-import PropertyFilterBar from "./ui/component/property-filter-bar";
-import PropertyListingGrid from "./ui/component/property-listing-grid";
-
 interface Property {
     id: number;
     image: string;

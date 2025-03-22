@@ -28,14 +28,11 @@ export default function NavigationBar() {
 
       {/* Desktop Navigation */}
       <div className="hidden md:flex space-x-6 absolute left-1/2 transform -translate-x-1/2">
-        <NavItem label="Buy" href="/buying" isActive={pathname === "/buying"} />
-        <NavItem label="Rent" href="/renting" isActive={pathname === "/renting"} />
-        <NavItem label="Sell" href="/selling" isActive={pathname === "/selling"} />
-        <NavItem
-          label="Calculators"
-          href="/calculators"
-          isActive={pathname === "/calculators"}
-        />
+        <NavItem label="Buy" href="/buy" isActive={pathname === "/buy"} />
+        <NavItem label="Rent" href="/rent" isActive={pathname === "/rent"} />
+        <NavItem label="Sell" href="/sell" isActive={pathname === "/sell"} />
+        <NavItem label="Calculators" href="/calculator" isActive={pathname === "/calculator"} />
+        <NavItem label="Company" href="/company" isActive={pathname === "/company"} />
       </div>
 
       {/* Mobile Hamburger Button */}
@@ -86,26 +83,32 @@ export default function NavigationBar() {
         <div className="flex flex-col space-y-4 mt-8 px-6">
           <NavItem
             label="Buy"
-            href="/buying"
-            isActive={pathname === "/buying"}
+            href="/buy"
+            isActive={pathname === "/buy"}
             onClick={closeMenu}
           />
           <NavItem
             label="Rent"
-            href="/renting"
-            isActive={pathname === "/renting"}
+            href="/rent"
+            isActive={pathname === "/rent"}
             onClick={closeMenu}
           />
           <NavItem
             label="Sell"
-            href="/selling"
-            isActive={pathname === "/selling"}
+            href="/sell"
+            isActive={pathname === "/sell"}
             onClick={closeMenu}
           />
           <NavItem
             label="Calculators"
-            href="/calculators"
-            isActive={pathname === "/calculators"}
+            href="/calculator"
+            isActive={pathname === "/calculator"}
+            onClick={closeMenu}
+          />
+          <NavItem
+            label="Company"
+            href="/company"
+            isActive={pathname === "/company"}
             onClick={closeMenu}
           />
         </div>

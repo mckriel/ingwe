@@ -17,7 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <header className="bg-[#FFFFFF] ">
                   <TopNav />
               </header>
-              <div className="flex-grow container mx-auto p-4 text-center h-screen">
+              <div className="flex-grow container mx-auto p-4 text-center min-h-screen">
                 { children }
               </div>
               <footer className="w-full bg-gray-800 text-white">

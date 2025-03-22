@@ -1,13 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 
-export default function PropertyFilterBar() {
-  // "Buy" is active by default
-  const [isBuyActive, setIsBuyActive] = useState(true);
+interface propertyFilterBarProps {
+  onSearch: () => void;
+}
+
+export default function PropertyFilterBar({ onSearch }: propertyFilterBarProps) {
   const [locationInput, setLocationInput] = useState("");
   const [locations, setLocations] = useState<string[]>([]);
+
+  const pathname = usePathname();
+
+  let heading_text = "Find Property for Sale";
+  if (pathname === "/rent") heading_text = "Find Property for Rent";
+  else if (pathname === "/buy") heading_text = "Find Property for Sale";
 
   const handleAddLocation = () => {
     if (!locationInput.trim()) return;
@@ -20,34 +29,14 @@ export default function PropertyFilterBar() {
   };
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-md w-full max-w-screen-lg mx-auto">
-      {/* Heading */}
+    <div className="bg-white p-4 rounded-lg w-full max-w-screen-lg mx-auto">
+      {/* Heading determined by pathname */}
       <h1 className="text-2xl font-bold mb-4 text-center">
-        {isBuyActive ? "Find Property for Sale" : "Find Property for Rent"}
+        {heading_text}
       </h1>
 
       {/* Buy / Rent Toggle Buttons - centered */}
       <div className="flex justify-center gap-4 mb-4">
-        <button
-          onClick={() => setIsBuyActive(true)}
-          className={`
-            pb-2 border-b-2
-            ${isBuyActive ? "border-[#D1DA68] text-[#D1DA68]" : "border-transparent text-gray-600"}
-            hover:text-[#D1DA68] transition-colors
-          `}
-        >
-          Buy
-        </button>
-        <button
-          onClick={() => setIsBuyActive(false)}
-          className={`
-            pb-2 border-b-2
-            ${!isBuyActive ? "border-[#D1DA68] text-[#D1DA68]" : "border-transparent text-gray-600"}
-            hover:text-[#D1DA68] transition-colors
-          `}
-        >
-          Rent
-        </button>
       </div>
 
       {/* Top Row: Location Search & Search Button */}
@@ -63,12 +52,6 @@ export default function PropertyFilterBar() {
               onChange={(e) => setLocationInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAddLocation()}
             />
-            <button
-              onClick={handleAddLocation}
-              className="absolute right-1 top-1 bottom-1 bg-blue-500 text-white rounded-full px-3 text-sm hover:bg-blue-600"
-            >
-              +
-            </button>
           </div>
           {locations.map((loc) => (
             <div
@@ -84,14 +67,16 @@ export default function PropertyFilterBar() {
         </div>
         {/* Search Button */}
         <div>
-          <button className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-full">
+          <button className="bg-[#D1DA68] hover:bg-[#D1DA68] hover:text-gray-600 text-white px-6 py-2 rounded-full"
+            onClick={onSearch}
+          >
             Search
           </button>
         </div>
       </div>
 
       {/* Bottom Row: Additional Filters */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-2 mt-4">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 mt-4">
         <select className="border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 w-full">
           <option>Property Type</option>
           <option>House</option>
@@ -116,9 +101,6 @@ export default function PropertyFilterBar() {
           <option>2</option>
           <option>3</option>
         </select>
-        <button className="border border-gray-300 hover:border-gray-400 px-4 py-2 rounded-full w-full">
-          More Filters +
-        </button>
       </div>
     </div>
   );

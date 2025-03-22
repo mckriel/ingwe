@@ -11,7 +11,7 @@ const lato = Lato({
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="{lato.className}">
+    <html lang="en" className="${lato.className}">
         <body className="antialiased bg-[#FFFFFF]">
            <main className="flex flex-col min-h-screen">
               <header className="bg-[#FFFFFF] ">

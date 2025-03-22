@@ -1,4 +1,4 @@
-import NavigationBar from "@/app/ui/component/top-navigation-bar/navigation-bar";
+import NavigationBar from "@/app/ui/component/header/top-navigation-bar/navigation-bar";
 
 export default function TopNav() {
     return (

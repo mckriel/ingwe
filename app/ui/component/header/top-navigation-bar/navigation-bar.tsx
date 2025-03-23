@@ -28,11 +28,11 @@ export default function NavigationBar() {
 
       {/* Desktop Navigation */}
       <div className="hidden md:flex space-x-6 absolute left-1/2 transform -translate-x-1/2">
-        <NavItem label="Buy" href="/buy" isActive={pathname === "/buy"} />
-        <NavItem label="Rent" href="/rent" isActive={pathname === "/rent"} />
-        <NavItem label="Sell" href="/sell" isActive={pathname === "/sell"} />
-        <NavItem label="Calculators" href="/calculator" isActive={pathname === "/calculator"} />
-        <NavItem label="Company" href="/company" isActive={pathname === "/company"} />
+        <NavItem label="Buy" href="/buy" isActive={pathname.startsWith("/buy")} />
+        <NavItem label="Rent" href="/rent" isActive={pathname.startsWith("/rent")} />
+        <NavItem label="Sell" href="/sell" isActive={pathname.startsWith("/sell")} />
+        <NavItem label="Calculators" href="/calculator" isActive={pathname.startsWith("/calculator")} />
+        <NavItem label="Company" href="/company" isActive={pathname.startsWith("/company")} />
       </div>
 
       {/* Mobile Hamburger Button */}
@@ -84,31 +84,31 @@ export default function NavigationBar() {
           <NavItem
             label="Buy"
             href="/buy"
-            isActive={pathname === "/buy"}
+            isActive={pathname.startsWith("/buy")}
             onClick={closeMenu}
           />
           <NavItem
             label="Rent"
             href="/rent"
-            isActive={pathname === "/rent"}
+            isActive={pathname.startsWith("/rent")}
             onClick={closeMenu}
           />
           <NavItem
             label="Sell"
             href="/sell"
-            isActive={pathname === "/sell"}
+            isActive={pathname.startsWith("/sell")}
             onClick={closeMenu}
           />
           <NavItem
             label="Calculators"
             href="/calculator"
-            isActive={pathname === "/calculator"}
+            isActive={pathname.startsWith("/calculator")}
             onClick={closeMenu}
           />
           <NavItem
             label="Company"
             href="/company"
-            isActive={pathname === "/company"}
+            isActive={pathname.startsWith("/company")}
             onClick={closeMenu}
           />
         </div>

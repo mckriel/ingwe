@@ -359,7 +359,14 @@ export default function PropertyFilterBar({ onSearch, onFilterChange = () => {} 
               <select
                 className="appearance-none bg-white w-full pl-3 pr-8 py-2 rounded-full text-sm focus:outline-none font-medium"
                 value={propertyType}
-                onChange={(e) => setPropertyType(e.target.value)}
+                onChange={(e) => {
+                  setPropertyType(e.target.value);
+                  console.log("Property type filter changed to:", e.target.value);
+                  // Immediately update the parent component when property type changes
+                  onFilterChange({
+                    property_type: e.target.value === "" ? undefined : e.target.value
+                  });
+                }}
               >
                 <option value="" className={!propertyType ? "font-bold" : ""}>Property Type</option>
                 {propertyTypes.map((type) => (

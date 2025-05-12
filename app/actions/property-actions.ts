@@ -501,7 +501,10 @@ export async function get_residential_listings(params: {
 			- Type: ${typeof locationId}
 			- Attempting multiple parameter names: location, location_id, area`);
 		}
-		if (params.property_type) queryParams.append("property_type", params.property_type);
+		if (params.property_type) {
+			console.log(`API filtering by property type: "${params.property_type}"`);
+			queryParams.append("property_type", params.property_type);
+		}
 		if (params.min_price) queryParams.append("min_price", params.min_price.toString());
 		if (params.max_price) queryParams.append("max_price", params.max_price.toString());
 		if (params.bedrooms) queryParams.append("bedrooms", params.bedrooms.toString());
@@ -529,7 +532,9 @@ export async function get_residential_listings(params: {
 			bedrooms: params.bedrooms,
 			site: params.site,
 			listing_type: params.listing_type,
-			endpoint: endpoint
+			endpoint: endpoint,
+				full_url: endpoint,
+				query_params: queryString
 		});
 		
 		const response = await fetch_with_auth(endpoint);
@@ -541,7 +546,10 @@ export async function get_residential_listings(params: {
 		}
 		
 		const data = await response.json();
-		
+
+		// Log the entire API response for residential listings
+		console.log("FULL RESIDENTIAL LISTINGS API RESPONSE:", data);
+
 		// If location filtering was requested, ALWAYS do client-side filtering
 		// This ensures we only return properties with the matching location ID
 		if (params.location) {
@@ -610,14 +618,17 @@ export async function get_listing_details(listing_id: string) {
 	try {
 		// Use the new listings API endpoint as documented
 		const endpoint = `/listings/api/v1/residential/${listing_id}/`;
-		
+
 		const response = await fetch_with_auth(endpoint);
-		
+
 		if (response.ok) {
 			const data = await response.json();
-			
+
+			// Log the entire API response without formatting to see all fields
+			console.log("FULL API RESPONSE:", data);
+
 			// Process the API response
-			
+
 			// Create an array of image URLs that can be used by the frontend
 			const imageUrls = [];
 			

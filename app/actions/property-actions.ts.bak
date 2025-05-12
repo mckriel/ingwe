@@ -191,6 +191,10 @@ export async function get_formatted_properties(params: {
 	limit?: number;
 	offset?: number;
 	location?: string;
+	location_display?: string;
+	location_suburb?: string;
+	location_area?: string;
+	location_province?: string;
 	property_type?: string;
 	min_price?: number;
 	max_price?: number;
@@ -205,21 +209,105 @@ export async function get_formatted_properties(params: {
 		// Default to 12 properties if not specified
 		const limit = params.limit || 12;
 		
-		// Fetch properties from the API
-		const data = await get_residential_listings({
-			limit: limit,
-			offset: params.offset,
-			order_by: "-created", // Most recent first
-			location: params.location,
-			property_type: params.property_type,
-			min_price: params.min_price,
-			max_price: params.max_price,
-			bedrooms: params.bedrooms,
-			company: params.company,
-			site: params.site,
-			branch: params.branch,
-			listing_type: params.listing_type // Pass listing_type to filter by sale or rent
+		// First, try searching by location ID
+		let data;
+		
+		// Log to track what's happening
+		console.log("Attempting to fetch properties with params:", {
+			location_id: params.location,
+			location_display: params.location_display,
+			location_suburb: params.location_suburb,
+			location_area: params.location_area
 		});
+		
+		// First try to search by location ID
+		if (params.location) {
+			console.log("Searching by location ID:", params.location);
+			
+			data = await get_residential_listings({
+				limit: limit,
+				offset: params.offset,
+				order_by: "-created", // Most recent first
+				location: params.location,
+				property_type: params.property_type,
+				min_price: params.min_price,
+				max_price: params.max_price,
+				bedrooms: params.bedrooms,
+				company: params.company,
+				site: params.site,
+				branch: params.branch,
+				listing_type: params.listing_type
+			});
+			
+			// Check if we got any results
+			if (data.results.length === 0 && params.location_display) {
+				console.log(`No results found for location ID ${params.location}, trying to search by name: ${params.location_display}`);
+				
+				// Try searching by location text/display name if ID search returned no results
+				data = await get_residential_listings({
+					limit: limit,
+					offset: params.offset,
+					order_by: "-created",
+					search: params.location_display, // Use display name in search field
+					property_type: params.property_type,
+					min_price: params.min_price,
+					max_price: params.max_price,
+					bedrooms: params.bedrooms,
+					company: params.company,
+					site: params.site,
+					branch: params.branch,
+					listing_type: params.listing_type
+				});
+				
+				// If still no results, try using suburb or area name
+				if (data.results.length === 0) {
+					let searchTerm = "";
+					
+					// Try suburb first, then area, then province
+					if (params.location_suburb) {
+						searchTerm = params.location_suburb;
+					} else if (params.location_area) {
+						searchTerm = params.location_area;
+					} else if (params.location_province) {
+						searchTerm = params.location_province;
+					}
+					
+					if (searchTerm) {
+						console.log(`Still no results, trying with term: ${searchTerm}`);
+						
+						data = await get_residential_listings({
+							limit: limit,
+							offset: params.offset,
+							order_by: "-created",
+							search: searchTerm,
+							property_type: params.property_type,
+							min_price: params.min_price,
+							max_price: params.max_price,
+							bedrooms: params.bedrooms,
+							company: params.company,
+							site: params.site,
+							branch: params.branch,
+							listing_type: params.listing_type
+						});
+					}
+				}
+			}
+		} else {
+			// Default search without location filter
+			data = await get_residential_listings({
+				limit: limit,
+				offset: params.offset,
+				order_by: "-created", // Most recent first
+				property_type: params.property_type,
+				min_price: params.min_price,
+				max_price: params.max_price,
+				bedrooms: params.bedrooms,
+				company: params.company,
+				site: params.site,
+				branch: params.branch,
+				listing_type: params.listing_type // Pass listing_type to filter by sale or rent
+			});
+		}
 		
 		// Format properties with basic information
 		const formattedProperties = data.results.map((property: any) => {
@@ -368,6 +456,7 @@ export async function get_residential_listings(params: {
 	offset?: number;
 	order_by?: string;
 	location?: string;
+	search?: string; // Text search parameter for when we can't use location ID
 	property_type?: string;
 	min_price?: number;
 	max_price?: number;
@@ -386,12 +475,36 @@ export async function get_residential_listings(params: {
 		if (params.offset) queryParams.append("offset", params.offset.toString());
 		if (params.order_by) queryParams.append("order_by", params.order_by);
 		
+		// Handle text search parameter (location names, suburbs, etc.)
+		if (params.search) {
+			console.log(`API filtering by text search: "${params.search}"`);
+			queryParams.append("search", params.search);
+		}
+		
 		// Additional filter parameters
 		if (params.location) {
-				console.log(`API filtering by location ID: ${params.location}`);
-				queryParams.append("location", params.location.toString());
-			}
-		if (params.property_type) queryParams.append("property_type", params.property_type);
+			// Convert location to number if it's a string containing only digits
+			const locationId = typeof params.location === 'string' && /^\d+$/.test(params.location) 
+			  ? parseInt(params.location, 10) 
+			  : params.location;
+			
+			console.log(`API filtering by location ID: ${locationId}`);
+			
+			// Try different possible API parameter names for location
+			queryParams.append("location", locationId.toString());
+			queryParams.append("location_id", locationId.toString());
+			queryParams.append("area", locationId.toString());
+			
+			// Enhanced logging
+			console.log(`Location filter details:
+			- Location ID: ${locationId}
+			- Type: ${typeof locationId}
+			- Attempting multiple parameter names: location, location_id, area`);
+		}
+		if (params.property_type) {
+			console.log(`API filtering by property type: ${params.property_type}`);
+			queryParams.append("property_type", params.property_type);
+		}
 		if (params.min_price) queryParams.append("min_price", params.min_price.toString());
 		if (params.max_price) queryParams.append("max_price", params.max_price.toString());
 		if (params.bedrooms) queryParams.append("bedrooms", params.bedrooms.toString());
@@ -409,6 +522,19 @@ export async function get_residential_listings(params: {
 		// Get all fields plus metadata for images
 		const endpoint = `/mashup/api/v1/residential/?meta_fields=listing_images,agent${queryString ? `&${queryString}` : ""}`;
 		
+		// Debug logging for API request
+		console.log("Making API request with filters:", {
+			location: params.location,
+			search: params.search,
+			property_type: params.property_type,
+			min_price: params.min_price,
+			max_price: params.max_price,
+			bedrooms: params.bedrooms,
+			site: params.site,
+			listing_type: params.listing_type,
+			endpoint: endpoint
+		});
+		
 		const response = await fetch_with_auth(endpoint);
 		
 		if (!response.ok) {
@@ -418,6 +544,63 @@ export async function get_residential_listings(params: {
 		}
 		
 		const data = await response.json();
+
+		// Log the entire API response for residential listings
+		console.log("FULL RESIDENTIAL LISTINGS API RESPONSE:", data);
+
+		// If location filtering was requested, ALWAYS do client-side filtering
+		// This ensures we only return properties with the matching location ID
+		if (params.location) {
+			console.log(`==== LOCATION FILTERING DIAGNOSTICS ====`);
+			console.log(`Applying client-side location filtering for ID: ${params.location}`);
+			console.log(`Before filtering: ${data.results.length} properties`);
+			
+			// Extract the location ID we're filtering for
+			const targetLocationId = typeof params.location === 'string' ? params.location : String(params.location);
+			
+			console.log(`Target location ID for filtering: ${targetLocationId}`);
+			
+			// Dump the first few properties' location IDs for debugging
+			console.log("Sample property locations (first 5):");
+			data.results.slice(0, 5).forEach((property: any, index: number) => {
+				console.log(`Property ${index + 1} - Location:`, property.location, 
+					"Type:", typeof property.location);
+			});
+			
+			// Filter the results to only include properties with matching location
+			const filteredResults = data.results.filter((property: any) => {
+				// Handle different possible formats of the location field
+				let propertyLocationId;
+				
+				if (typeof property.location === 'object' && property.location !== null) {
+					// If location is an object, try to get the ID from it
+					propertyLocationId = property.location.id?.toString();
+				} else if (property.location !== null && property.location !== undefined) {
+					// If it's a primitive value, convert to string
+					propertyLocationId = property.location.toString();
+				} else {
+					// If location is null/undefined, it can't match
+					return false;
+				}
+				
+				// Check if the property's location matches our target
+				const isMatch = propertyLocationId === targetLocationId;
+				
+				// For debugging, log some sample matches/non-matches
+				if (Math.random() < 0.1) { // Only log ~10% to avoid overwhelming the console
+					console.log(`Property location check: ${propertyLocationId} vs target ${targetLocationId} => ${isMatch ? 'MATCH' : 'NO MATCH'}`);
+				}
+				
+				return isMatch;
+			});
+			
+			console.log(`After filtering: ${filteredResults.length} properties match location ${targetLocationId}`);
+			console.log(`==== END LOCATION FILTERING DIAGNOSTICS ====`);
+			
+			// Replace results with filtered results
+			data.results = filteredResults;
+			data.count = filteredResults.length;
+		}
 		
 		return data;
 	} catch (error) {
@@ -433,14 +616,17 @@ export async function get_listing_details(listing_id: string) {
 	try {
 		// Use the new listings API endpoint as documented
 		const endpoint = `/listings/api/v1/residential/${listing_id}/`;
-		
+
 		const response = await fetch_with_auth(endpoint);
-		
+
 		if (response.ok) {
 			const data = await response.json();
-			
+
+			// Log the entire API response without formatting to see all fields
+			console.log("FULL API RESPONSE:", data);
+
 			// Process the API response
-			
+
 			// Create an array of image URLs that can be used by the frontend
 			const imageUrls = [];
 			
@@ -634,8 +820,8 @@ export async function get_location_by_id(locationId: number | string) {
 	}
 }
 
-// Simple in-memory cache for locations
-const locationCache: Record<string, any> = {};
+// Import shared location cache and preload function
+import { getLocationCache, preloadCommonLocations } from './preload-data';
 
 // In-memory cache for location suggestions for faster autocomplete
 const locationSuggestionsCache: Record<string, any[]> = {};
@@ -646,6 +832,13 @@ const locationSuggestionsCache: Record<string, any[]> = {};
  */
 export async function get_locations_for_properties(properties: any[]) {
 	try {
+		// Try to preload common locations first
+		// This only happens once per app session
+		await preloadCommonLocations();
+		
+		// Get the location cache
+		const locationCache = await getLocationCache();
+		
 		// Extract unique location IDs from properties
 		const locationIds = [...new Set(properties
 			.map(prop => prop.location)
@@ -657,6 +850,7 @@ export async function get_locations_for_properties(properties: any[]) {
 		
 		// If we have IDs to fetch, make batch requests
 		if (idsToFetch.length > 0) {
+			console.log(`Fetching ${idsToFetch.length} locations not in cache`);
 			// Currently the API doesn't support bulk fetching locations by ID
 			// We'll fetch them individually but in parallel for better performance
 			const locationPromises = idsToFetch.map(id => get_location_by_id(id));
@@ -668,9 +862,11 @@ export async function get_locations_for_properties(properties: any[]) {
 					locationCache[id] = locationResults[index];
 				}
 			});
+		} else {
+			console.log('All locations found in cache - no API calls needed');
 		}
 		
-		// Return enhanced properties with location details
+		// Return enhanced properties with location details from shared cache
 		return properties.map(property => {
 			const locationId = property.location;
 			let locationDetail = null;

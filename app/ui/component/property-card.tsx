@@ -8,7 +8,16 @@ interface PropertyCardProps {
   price: string;     // e.g., "R12,000 per month"
   beds: number;      // number of bedrooms
   baths: number;     // number of bathrooms
-  sqft: number;      // square footage
+  size: number;      // square meters (m²)
+  id?: number;       // property ID for linking to detail page
+  propertyId?: number; // API property ID if different from id
+  reference?: string; // Property reference code
+  description?: string; // Property description
+  propertyType?: string; // Type of property
+  location?: string | number; // Location ID of the property
+  locationString?: string; // Formatted location name (area, suburb)
+  locationDetail?: any; // Full location object with details
+  site?: number;     // Site ID (for company identification)
 }
 
 export default function PropertyCard({
@@ -17,93 +26,100 @@ export default function PropertyCard({
   price,
   beds,
   baths,
-  sqft,
+  size,
+  id = 123,
+  propertyId,
+  reference,
+  description,
+  propertyType,
+  location,
+  locationString,
+  locationDetail,
+  site,
 }: PropertyCardProps) {
+  // Simply use the property ID for a clean URL
+  const propertyUrl = `/listing/${propertyId || id}`;
+  
+  // Check if this is a rental property based on the price format
+  const isRental = price?.includes('per month') || price?.includes('p/m') || propertyType?.includes('Rental') || propertyType?.includes('To Let');
+
   return (
-    <Link href="/listing/123" className="block">
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+    <Link href={propertyUrl} className="block h-full">
+      <div className="bg-white rounded-lg shadow overflow-hidden flex flex-col h-full">
         {/* Image Wrapper */}
-        <div className="relative w-full h-48">
+        <div className="relative w-full h-56">
           <Image
-            src={image}
+            src={image && image.trim() !== "" ? image : "/house1.jpeg"} // Fallback to default image if none provided
             alt={title}
             fill
             className="object-cover"
             sizes="(max-width: 768px) 100vw,
                   (max-width: 1200px) 50vw,
                   33vw"
+            onError={(e) => {
+              // Replace with fallback image on error
+              const imgElement = e.target as HTMLImageElement;
+              imgElement.src = "/house1.jpeg";
+            }}
           />
-          {/* Contact Agent Badge */}
-          <div className="absolute top-2 left-2 bg-[#4B4B4B]/80 text-white px-3 py-1 rounded-full text-sm">
-            Contact Agent
-          </div>
         </div>
 
-        {/* Info Section */}
-        <div className="p-4">
-          {/* Title and Price */}
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xl font-semibold text-[#4B4B4B]">{title}</h2>
-            <span className="text-[#4B4B4B] font-medium">{price}</span>
+        {/* Price directly under the image - doubled in size */}
+        <div className="px-4 py-2">
+          <span className="text-[#1e1e1e] font-bold text-2xl">
+            {price}
+            {isRental && <span className="text-base font-normal text-gray-500"> p/m</span>}
+          </span>
+        </div>
+
+        {/* Info Section - Content area below image with reduced spacing */}
+        <div className="px-4 pt-1 pb-4 flex-grow flex flex-col">
+          {/* Area/Location with border underneath (full width) */}
+          <div className="mb-3 pb-2 border-b -mx-4 px-4">
+            <span className="text-[#1e1e1e] text-sm">
+              {locationString || (locationDetail?.area ? (locationDetail.suburb ? `${locationDetail.suburb}, ${locationDetail.area}` : locationDetail.area) : (typeof location === 'number' || (typeof location === 'string' && !isNaN(Number(location))) ? "Unknown Location" : location))}
+            </span>
           </div>
 
-          {/* Features: bed, bath, sqft */}
-          <div className="flex items-center gap-4 text-gray-600 text-sm">
+          {/* Features: bed, bath, sqm in a horizontal layout */}
+          <div className="flex items-center justify-center gap-5 text-gray-700 text-sm">
             {/* Beds */}
-            <div className="flex items-center gap-1">
-              {/* Bed icon (optional) */}
+            <div className="flex items-center gap-2">
               <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.5}
+                className="w-5 h-5 text-[#D1DA68]"
+                fill="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M2.25 9.75h19.5m-19.5 0v9a1.5 1.5 0 001.5 1.5h1.5m16.5-10.5v9a1.5 1.5 0 01-1.5 1.5h-1.5m-9-3h6"
-                />
+                <rect x="4" y="13" width="16" height="5" rx="1" />
+                <path d="M4 11V9a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2H4z" />
+                <path d="M6 8V6a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v2H6z" />
               </svg>
               <span>{beds} bed</span>
             </div>
 
             {/* Baths */}
-            <div className="flex items-center gap-1">
-              {/* Bath icon (optional) */}
+            <div className="flex items-center gap-2">
               <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.5}
+                className="w-5 h-5 text-[#D1DA68]"
+                fill="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3 10.5h18m-9 0V5.25m0 0h1.125a2.25 2.25 0 110 4.5H12m0-4.5H10.875a2.25 2.25 0 100 4.5H12m0 0v3"
-                />
+                <path d="M4 12h16a1 1 0 0 1 1 1v2a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4v-2a1 1 0 0 1 1-1z" />
+                <path d="M6 12V6a2 2 0 0 1 2-2h1a2 2 0 0 1 2 2v6" />
               </svg>
               <span>{baths} bath</span>
             </div>
 
-            {/* Sqft */}
-            <div className="flex items-center gap-1">
-              {/* Sqft icon (optional) */}
+            {/* Size in square meters */}
+            <div className="flex items-center gap-2">
               <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.5}
+                className="w-5 h-5 text-[#D1DA68]"
+                fill="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3.75 4.5l16.5 16.5m0-16.5L3.75 21"
-                />
+                <path d="M21 21H3V3h18v18zM9 5H5v4h4V5zm10 0h-4v4h4V5zM9 15H5v4h4v-4zm10 0h-4v4h4v-4z" />
               </svg>
-              <span>{sqft} sqft</span>
+              <span>{size} m²</span>
             </div>
           </div>
         </div>

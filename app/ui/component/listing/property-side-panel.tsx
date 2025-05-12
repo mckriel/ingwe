@@ -28,7 +28,7 @@ export default function PropertySidePanel({ price, agent }: PropertySidePanelPro
         <div className="flex items-center gap-4 mb-4">
           <div className="relative w-16 h-16">
             <Image
-              src={agent.image}
+              src={agent.image && agent.image.trim() !== "" ? agent.image : "/house1.jpeg"}
               alt={agent.name}
               fill
               className="object-cover rounded-full"

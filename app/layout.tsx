@@ -2,6 +2,8 @@ import "@/app/ui/global.css";
 import TopNav from "@/app/ui/component/header/top-navigation-bar/navigation-bar";
 import Footer from "@/app/ui/component/footer/footer";
 import { Lato } from 'next/font/google';
+import { preloadCommonLocations } from "./actions/preload-data";
+import PreloadLocations from "./ui/component/preload-locations";
 
 const lato = Lato({
   subsets: ['latin'],
@@ -9,10 +11,16 @@ const lato = Lato({
   variable: '--font-lato', // optional: creates a CSS variable for easier usage
 });
 
+// Immediate server-side preload when app starts
+preloadCommonLocations();
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${lato.className}`}>
         <body className="antialiased bg-[#FFFFFF]">
+           {/* Client-side preload component (invisible) */}
+           <PreloadLocations />
+           
            <main className="flex flex-col min-h-screen">
               <header className="bg-[#FFFFFF] ">
                   <TopNav />

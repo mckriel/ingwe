@@ -23,14 +23,18 @@ export default function NavigationBar() {
           width={200}
           height={50}
           priority
+          onError={(e) => {
+            // Fallback for logo
+            const imgElement = e.target as HTMLImageElement;
+            // Keep current dimensions but show alternative text
+            console.error("Logo image failed to load");
+          }}
         />
       </Link>
 
       {/* Desktop Navigation */}
       <div className="hidden md:flex space-x-6 absolute left-1/2 transform -translate-x-1/2">
-        <NavItem label="Buy" href="/buy" isActive={pathname.startsWith("/buy")} />
-        <NavItem label="Rent" href="/rent" isActive={pathname.startsWith("/rent")} />
-        <NavItem label="Sell" href="/sell" isActive={pathname.startsWith("/sell")} />
+        <NavItem label="Listings" href="/buy" isActive={pathname.startsWith("/buy") || pathname.startsWith("/rent") || pathname.startsWith("/sell")} />
         <NavItem label="Calculators" href="/calculator" isActive={pathname.startsWith("/calculator")} />
         <NavItem label="Company" href="/company" isActive={pathname.startsWith("/company")} />
       </div>
@@ -82,21 +86,9 @@ export default function NavigationBar() {
 
         <div className="flex flex-col space-y-4 mt-8 px-6">
           <NavItem
-            label="Buy"
+            label="Listings"
             href="/buy"
-            isActive={pathname.startsWith("/buy")}
-            onClick={closeMenu}
-          />
-          <NavItem
-            label="Rent"
-            href="/rent"
-            isActive={pathname.startsWith("/rent")}
-            onClick={closeMenu}
-          />
-          <NavItem
-            label="Sell"
-            href="/sell"
-            isActive={pathname.startsWith("/sell")}
+            isActive={pathname.startsWith("/buy") || pathname.startsWith("/rent") || pathname.startsWith("/sell")}
             onClick={closeMenu}
           />
           <NavItem

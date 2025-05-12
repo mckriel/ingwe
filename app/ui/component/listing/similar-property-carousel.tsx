@@ -47,11 +47,16 @@ export default function SimilarPropertyCarousel({
                 {/* Image */}
                 <div className="relative w-full h-48 mb-4">
                   <Image
-                    src={prop.image}
+                    src={prop.image && prop.image.trim() !== "" ? prop.image : "/house1.jpeg"}
                     alt={prop.title}
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    onError={(e) => {
+                      // Replace with fallback image on error
+                      const imgElement = e.target as HTMLImageElement;
+                      imgElement.src = "/house1.jpeg";
+                    }}
                   />
                   {/* Optional Contact Agent Badge */}
                   <div className="absolute top-2 left-2 bg-black/60 text-white px-3 py-1 rounded-full text-sm">

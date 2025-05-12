@@ -17,7 +17,10 @@ interface PropertyImageGalleryProps {
 export default function PropertyImageGallery({ images }: PropertyImageGalleryProps) {
   const [thumbsSwiper, setThumbsSwiper] = useState<SwiperClass | null>(null);
 
-  if (!images || images.length === 0) {
+  // Filter out any empty or invalid image URLs
+  const validImages = images?.filter(img => img && img.trim() !== "") || [];
+  
+  if (validImages.length === 0) {
     return null;
   }
 
@@ -30,7 +33,7 @@ export default function PropertyImageGallery({ images }: PropertyImageGalleryPro
         thumbs={{ swiper: thumbsSwiper && !thumbsSwiper.destroyed ? thumbsSwiper : null }}
         className="mb-4"
       >
-        {images.map((src, idx) => (
+        {validImages.map((src, idx) => (
           <SwiperSlide key={idx}>
             <div className="relative w-full aspect-video">
               <Image
@@ -38,6 +41,12 @@ export default function PropertyImageGallery({ images }: PropertyImageGalleryPro
                 alt={`Property image ${idx + 1}`}
                 fill
                 className="object-cover rounded-md"
+                onError={(e) => {
+                  // Replace with fallback image on error
+                  const imgElement = e.target as HTMLImageElement;
+                  imgElement.src = "/house1.jpeg";
+                  // Using fallback image
+                }}
               />
             </div>
           </SwiperSlide>
@@ -48,11 +57,11 @@ export default function PropertyImageGallery({ images }: PropertyImageGalleryPro
       <Swiper
         modules={[Navigation, Thumbs]}
         onSwiper={setThumbsSwiper}
-        slidesPerView={Math.min(images.length, 5)}
+        slidesPerView={Math.min(validImages.length, 5)}
         spaceBetween={10}
         watchSlidesProgress
       >
-        {images.map((src, idx) => (
+        {validImages.map((src, idx) => (
           <SwiperSlide key={idx}>
             <div className="relative w-full aspect-video cursor-pointer">
               <Image
@@ -60,6 +69,12 @@ export default function PropertyImageGallery({ images }: PropertyImageGalleryPro
                 alt={`Thumbnail ${idx + 1}`}
                 fill
                 className="object-cover rounded-md"
+                onError={(e) => {
+                  // Replace with fallback image on error
+                  const imgElement = e.target as HTMLImageElement;
+                  imgElement.src = "/house1.jpeg";
+                  // Using fallback image
+                }}
               />
             </div>
           </SwiperSlide>

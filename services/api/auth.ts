@@ -43,27 +43,60 @@ export async function get_token(): Promise<string> {
 	const credentials = Buffer.from(`${API_USERNAME}:${API_PASSWORD}`).toString("base64");
 
 	try {
-		console.log(`Making auth request to: ${API_BASE_URL}/users/public-api/login/`);
-		const response = await fetch(`${API_BASE_URL}/users/public-api/login/`, {
+		// Enhanced logging for debugging
+		const auth_url = `${API_BASE_URL}/users/public-api/login/`;
+		const auth_headers = {
+			"Authorization": `Basic ${credentials}`,
+			"User-Agent": "ingwe",
+		};
+		
+		console.log("=== AUTHENTICATION DEBUG INFO ===");
+		console.log(`API Base URL: ${API_BASE_URL}`);
+		console.log(`Auth endpoint: ${auth_url}`);
+		console.log("Auth headers:", JSON.stringify({
+			...auth_headers,
+			"Authorization": "Basic [REDACTED]" // Don't log actual credentials
+		}, null, 2));
+		console.log("Username length:", API_USERNAME.length);
+		console.log("Password length:", API_PASSWORD.length);
+		console.log("================================");
+		
+		const response = await fetch(auth_url, {
 			method: "GET",
-			headers: {
-				"Authorization": `Basic ${credentials}`,
-          		"User-Agent": "ingwe",
-			},
+			headers: auth_headers,
 			cache: "no-store",
 		});
 
 		const response_text = await response.text();
 		console.log(`Response status: ${response.status}`);
+		console.log(`Response headers:`, JSON.stringify(Object.fromEntries([...response.headers.entries()]), null, 2));
+		
+		// Log a preview of the response body (limited to avoid exposing sensitive data)
+		if (response_text.length > 0) {
+			console.log(`Response preview (first 100 chars): ${response_text.substring(0, 100)}${response_text.length > 100 ? '...' : ''}`);
+		} else {
+			console.log(`Response body is empty`);
+		}
 
 		if (!response.ok) {
 			let error_message = "Authentication failed";
+			let error_details = {};
+			
 			try {
 				const error_data = JSON.parse(response_text);
-				error_message = `Authentication failed: ${error_data.detail || error_data.error_description}`;
+				error_details = error_data;
+				error_message = `Authentication failed: ${error_data.detail || error_data.error_description || error_data.message || JSON.stringify(error_data)}`;
 			} catch (e) {
 				error_message = `Authentication failed: ${response_text}`;
 			}
+			
+			console.error("=== AUTHENTICATION ERROR DETAILS ===");
+			console.error(`Status: ${response.status} ${response.statusText}`);
+			console.error(`Error message: ${error_message}`);
+			console.error(`Error details:`, JSON.stringify(error_details, null, 2));
+			console.error(`Response body: ${response_text}`);
+			console.error("====================================");
+			
 			throw new Error(error_message);
 		}
 

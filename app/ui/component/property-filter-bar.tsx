@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { getLocationSuggestions, prefetchCommonLocationTerms } from "@/app/actions/location-handler";
+import { get_safe_property_types, PropertyType, get_fallback_property_types } from "@/app/actions/property-types";
 
 interface propertyFilterBarProps {
   onSearch: () => void;
@@ -39,20 +40,52 @@ export default function PropertyFilterBar({ onSearch, onFilterChange = () => {} 
   const [minPrice, setMinPrice] = useState<string>("");
   const [maxPrice, setMaxPrice] = useState<string>("");
   const [bedrooms, setBedrooms] = useState<string>("");
-  const [listingType, setListingType] = useState<string>("buy"); // buy, rent, sell
+  const [listingType, setListingType] = useState<string>("buy"); // buy, rent
   // State for location suggestions
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // State for property types
+  const [propertyTypes, setPropertyTypes] = useState<PropertyType[]>([]);
   
   // Reference for the suggestion dropdown
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
   const pathname = usePathname();
 
-  let heading_text = "Find Property for Sale";
-  if (pathname === "/rent") heading_text = "Find Property for Rent";
-  else if (pathname === "/buy") heading_text = "Find Property for Sale";
+  // Set the default listing type based on the current page
+  useEffect(() => {
+    if (pathname === "/rent") {
+      setListingType("rent");
+    } else if (pathname === "/buy") {
+      setListingType("buy");
+    }
+  }, [pathname]);
+
+  // Fetch property types when component mounts
+  useEffect(() => {
+    const fetchPropertyTypes = async () => {
+      try {
+        // First try to get from API/cache
+        const types = await get_safe_property_types();
+        setPropertyTypes(types);
+      } catch (error) {
+        console.error("Error fetching property types:", error);
+
+        // If that fails, use fallback types
+        try {
+          const fallbackTypes = await get_fallback_property_types();
+          setPropertyTypes(fallbackTypes);
+        } catch (fallbackError) {
+          console.error("Error fetching fallback property types:", fallbackError);
+          // Set to empty array as last resort (UI will handle this gracefully)
+        }
+      }
+    };
+
+    fetchPropertyTypes();
+  }, []);
 
   // Fetch location suggestions when input changes
   useEffect(() => {
@@ -228,41 +261,6 @@ export default function PropertyFilterBar({ onSearch, onFilterChange = () => {} 
 
   return (
     <div className="bg-white p-4 rounded-lg w-full max-w-screen-lg mx-auto">
-      {/* Buy/Rent/Sell Toggle - Now above the location search */}
-      <div className="mb-6">
-        <div className="inline-flex border-b w-full">
-          <button
-            className={`py-3 px-10 font-medium text-base ${
-              listingType === "buy" 
-                ? "text-gray-800 border-b-4 border-[#D1DA68] font-bold" 
-                : "text-gray-500 hover:text-gray-800"
-            }`}
-            onClick={() => setListingType("buy")}
-          >
-            Buying
-          </button>
-          <button
-            className={`py-3 px-10 font-medium text-base ${
-              listingType === "rent" 
-                ? "text-gray-800 border-b-4 border-[#D1DA68] font-bold" 
-                : "text-gray-500 hover:text-gray-800"
-            }`}
-            onClick={() => setListingType("rent")}
-          >
-            Renting
-          </button>
-          <button
-            className={`py-3 px-10 font-medium text-base ${
-              listingType === "sell" 
-                ? "text-gray-800 border-b-4 border-[#D1DA68] font-bold" 
-                : "text-gray-500 hover:text-gray-800"
-            }`}
-            onClick={() => setListingType("sell")}
-          >
-            Selling
-          </button>
-        </div>
-      </div>
 
       {/* Location Search Row */}
       <div className="mb-8">
@@ -358,17 +356,21 @@ export default function PropertyFilterBar({ onSearch, onFilterChange = () => {} 
         <div className="flex-1 flex items-center justify-between">
           <div className="w-full md:w-1/3 px-2 py-1">
             <div className="relative">
-              <select 
+              <select
                 className="appearance-none bg-white w-full pl-3 pr-8 py-2 rounded-full text-sm focus:outline-none font-medium"
                 value={propertyType}
                 onChange={(e) => setPropertyType(e.target.value)}
               >
                 <option value="" className={!propertyType ? "font-bold" : ""}>Property Type</option>
-                <option value="House" className={propertyType === "House" ? "font-bold" : ""}>House</option>
-                <option value="Apartment" className={propertyType === "Apartment" ? "font-bold" : ""}>Apartment</option>
-                <option value="Townhouse" className={propertyType === "Townhouse" ? "font-bold" : ""}>Townhouse</option>
-                <option value="Villa" className={propertyType === "Villa" ? "font-bold" : ""}>Villa</option>
-                <option value="Duplex" className={propertyType === "Duplex" ? "font-bold" : ""}>Duplex</option>
+                {propertyTypes.map((type) => (
+                  <option
+                    key={type.id}
+                    value={type.name}
+                    className={propertyType === type.name ? "font-bold" : ""}
+                  >
+                    {type.display_name || type.name}
+                  </option>
+                ))}
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
                 <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">

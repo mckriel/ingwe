@@ -34,7 +34,9 @@ export default function NavigationBar() {
 
       {/* Desktop Navigation */}
       <div className="hidden md:flex space-x-6 absolute left-1/2 transform -translate-x-1/2">
-        <NavItem label="Listings" href="/buy" isActive={pathname.startsWith("/buy") || pathname.startsWith("/rent") || pathname.startsWith("/sell")} />
+        <NavItem label="Buy" href="/buy" isActive={pathname === "/buy"} />
+        <NavItem label="Rent" href="/rent" isActive={pathname === "/rent"} />
+        <NavItem label="Selling" href="/sell" isActive={pathname === "/sell"} />
         <NavItem label="Calculators" href="/calculator" isActive={pathname.startsWith("/calculator")} />
         <NavItem label="Company" href="/company" isActive={pathname.startsWith("/company")} />
       </div>
@@ -86,9 +88,21 @@ export default function NavigationBar() {
 
         <div className="flex flex-col space-y-4 mt-8 px-6">
           <NavItem
-            label="Listings"
+            label="Buy"
             href="/buy"
-            isActive={pathname.startsWith("/buy") || pathname.startsWith("/rent") || pathname.startsWith("/sell")}
+            isActive={pathname === "/buy"}
+            onClick={closeMenu}
+          />
+          <NavItem
+            label="Rent"
+            href="/rent"
+            isActive={pathname === "/rent"}
+            onClick={closeMenu}
+          />
+          <NavItem
+            label="Selling"
+            href="/sell"
+            isActive={pathname === "/sell"}
             onClick={closeMenu}
           />
           <NavItem

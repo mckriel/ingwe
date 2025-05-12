@@ -132,9 +132,10 @@ export default function Page() {
 
   return (
     <main className="min-h-screen flex flex-col items-center pt-8 w-full">
-      <PropertyFilterBar 
-        onSearch={handleSearch} 
-        onFilterChange={handleFilterChange} 
+      <h1 className="text-3xl font-bold mb-6 text-center">Property for Sale</h1>
+      <PropertyFilterBar
+        onSearch={handleSearch}
+        onFilterChange={handleFilterChange}
       />
       
       {loading ? (

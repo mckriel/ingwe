@@ -1,6 +1,7 @@
 "use server";
 
 import { fetch_with_auth } from "../../services/api/auth";
+import { fetch_property_types } from "./property-types";
 
 // Global location cache
 // This cache will be shared across the application
@@ -241,5 +242,19 @@ export async function getLocationById(locationId: number | string): Promise<any>
   } catch (error) {
     console.error(`Error fetching location ${locationId}:`, error);
     return null;
+  }
+}
+
+/**
+ * Preload property types
+ * This function can be called at application startup to fetch and cache property types
+ */
+export async function preloadPropertyTypes(): Promise<void> {
+  console.log("Preloading property types...");
+  try {
+    await fetch_property_types();
+    console.log("Property types preloaded successfully");
+  } catch (error) {
+    console.error("Error preloading property types:", error);
   }
 }

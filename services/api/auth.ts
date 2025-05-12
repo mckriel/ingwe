@@ -21,11 +21,29 @@ interface api_error {
 	error_description: string,
 }
 
-// token storage
+// token storage - use localStorage in development to persist across hot reloads
 let token_data: {
 	token: string;
 	expires_at: number;
 } | null = null;
+
+// Try to load from localStorage in browser environment (development only)
+if (typeof window !== 'undefined') {
+  try {
+    const stored = localStorage.getItem('propdata_token_data');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed && parsed.expires_at > Date.now()) {
+        console.log("Loaded token from localStorage");
+        token_data = parsed;
+      } else {
+        console.log("Stored token expired or invalid");
+      }
+    }
+  } catch (e) {
+    console.error("Failed to load token from localStorage", e);
+  }
+}
 
 // get auth token from api
 export async function get_token(): Promise<string> {
@@ -47,18 +65,40 @@ export async function get_token(): Promise<string> {
 		const auth_url = `${API_BASE_URL}/users/public-api/login/`;
 		const auth_headers = {
 			"Authorization": `Basic ${credentials}`,
-			"User-Agent": "ingwe",
+			// "User-Agent": "ingwe", // Removed User-Agent header to test if it's causing issues
 		};
+		
+		console.log("NOTE: User-Agent header has been deliberately removed for testing");
+
+		// Create obfuscated credentials for safe logging
+		// By replacing all but first 3 and last 3 characters with asterisks
+		let safe_credential_logging = "";
+		if (API_USERNAME.length > 6) {
+			safe_credential_logging = API_USERNAME.substring(0, 3) + 
+				'*'.repeat(API_USERNAME.length - 6) + 
+				API_USERNAME.substring(API_USERNAME.length - 3);
+		} else if (API_USERNAME.length > 0) {
+			safe_credential_logging = API_USERNAME[0] + '*'.repeat(API_USERNAME.length - 1);
+		}
 		
 		console.log("=== AUTHENTICATION DEBUG INFO ===");
 		console.log(`API Base URL: ${API_BASE_URL}`);
 		console.log(`Auth endpoint: ${auth_url}`);
-		console.log("Auth headers:", JSON.stringify({
-			...auth_headers,
-			"Authorization": "Basic [REDACTED]" // Don't log actual credentials
-		}, null, 2));
-		console.log("Username length:", API_USERNAME.length);
-		console.log("Password length:", API_PASSWORD.length);
+		console.log(`Full request URL: ${auth_url}`);
+		console.log(`HTTP Method: GET`);
+		console.log(`Username used (obfuscated): ${safe_credential_logging}`);
+		console.log(`Username length: ${API_USERNAME.length}`);
+		console.log(`Password length: ${API_PASSWORD.length}`);
+		console.log(`Credentials Base64 length: ${credentials.length}`);
+		console.log(`Credentials Base64 prefix: ${credentials.substring(0, 5)}...`);
+		
+		// Log the complete HTTP request as it would appear on the wire
+		console.log("=== COMPLETE HTTP REQUEST ===");
+		console.log(`GET /users/public-api/login/ HTTP/1.1
+Host: ${new URL(auth_url).host}
+Authorization: Basic ${credentials}
+Accept: */*
+`);
 		console.log("================================");
 		
 		const response = await fetch(auth_url, {
@@ -120,6 +160,16 @@ export async function get_token(): Promise<string> {
 			expires_at: Date.now() + (1800 - 60) * 1000,
 		};
 		
+		// Save to localStorage in browser environment (development only)
+		if (typeof window !== 'undefined') {
+			try {
+				localStorage.setItem('propdata_token_data', JSON.stringify(token_data));
+				console.log("Token saved to localStorage for persistence across hot reloads");
+			} catch (e) {
+				console.error("Failed to save token to localStorage", e);
+			}
+		}
+		
 		console.log("New token obtained and cached");
 		return token_data.token;
 	} catch (error) {
@@ -136,7 +186,7 @@ export async function fetch_with_auth(endpoint: string, options: RequestInit = {
 		// merge headers
 		const headers = {
 			"Authorization": `Bearer ${token}`,
-			"User-Agent": "ingwe",
+			// "User-Agent": "ingwe", // Removed User-Agent header to test if it's causing issues
 			...options.headers,	
 		};
 
@@ -164,7 +214,7 @@ export async function renew_token(): Promise<string> {
 			method: "GET",
 			headers: {
 				"Authorization": `Bearer ${token_data.token}`,
-				"User-Agent": "ingwe",
+				// "User-Agent": "ingwe", // Removed User-Agent header to test if it's causing issues
 			},
 			cache: "no-store",
 		});
@@ -180,6 +230,16 @@ export async function renew_token(): Promise<string> {
 			token: data.token || data.access_token,
 			expires_at: Date.now() + (data.expires_in || 1800 - 60) * 1000,
 		};
+		
+		// Save to localStorage in browser environment (development only)
+		if (typeof window !== 'undefined') {
+			try {
+				localStorage.setItem('propdata_token_data', JSON.stringify(token_data));
+				console.log("Renewed token saved to localStorage");
+			} catch (e) {
+				console.error("Failed to save renewed token to localStorage", e);
+			}
+		}
 
 		console.log("Token renewed successfully");
 		return token_data.token;

@@ -547,8 +547,7 @@ export async function get_residential_listings(params: {
 		
 		const data = await response.json();
 
-		// Log the entire API response for residential listings
-		console.log("FULL RESIDENTIAL LISTINGS API RESPONSE:", data);
+		// Process the data without logging the entire response
 
 		// If location filtering was requested, ALWAYS do client-side filtering
 		// This ensures we only return properties with the matching location ID
@@ -623,9 +622,6 @@ export async function get_listing_details(listing_id: string) {
 
 		if (response.ok) {
 			const data = await response.json();
-
-			// Log the entire API response without formatting to see all fields
-			console.log("FULL API RESPONSE:", data);
 
 			// Process the API response
 
@@ -852,7 +848,6 @@ export async function get_locations_for_properties(properties: any[]) {
 		
 		// If we have IDs to fetch, make batch requests
 		if (idsToFetch.length > 0) {
-			console.log(`Fetching ${idsToFetch.length} locations not in cache`);
 			// Currently the API doesn't support bulk fetching locations by ID
 			// We'll fetch them individually but in parallel for better performance
 			const locationPromises = idsToFetch.map(id => get_location_by_id(id));
@@ -864,8 +859,6 @@ export async function get_locations_for_properties(properties: any[]) {
 					locationCache[id] = locationResults[index];
 				}
 			});
-		} else {
-			console.log('All locations found in cache - no API calls needed');
 		}
 		
 		// Return enhanced properties with location details from shared cache

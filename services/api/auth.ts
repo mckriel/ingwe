@@ -47,12 +47,8 @@ if (typeof window !== 'undefined') {
 
 // get auth token from api
 export async function get_token(): Promise<string> {
-	// Add debug log to trace token fetching
-	console.log("get_token called, checking cache...");
-	
 	// Check if we have a valid cached token
 	if (token_data && token_data.expires_at > Date.now()) {
-		console.log("Using cached token");
 		return token_data.token;
 	}
 
@@ -190,7 +186,6 @@ export async function fetch_with_auth(endpoint: string, options: RequestInit = {
 			...options.headers,	
 		};
 
-		console.log(`Making authenticated request to: ${API_BASE_URL}${endpoint}`);
 		return fetch(`${API_BASE_URL}${endpoint}`, {
 			...options,
 			headers,

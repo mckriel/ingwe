@@ -3,12 +3,6 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   images: {
-    domains: [
-      'api-gw.propdata.net',
-      'staging.api-gw.propdata.net',
-      'manage.propdata.net',
-      'd21tw07c6rnmp0.cloudfront.net'
-    ],
     remotePatterns: [
       {
         protocol: 'https',
@@ -21,6 +15,22 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'propdata.net',
+      },
+      {
+        protocol: 'https',
+        hostname: 'api-gw.propdata.net',
+      },
+      {
+        protocol: 'https',
+        hostname: 'staging.api-gw.propdata.net',
+      },
+      {
+        protocol: 'https',
+        hostname: 'manage.propdata.net',
+      },
+      {
+        protocol: 'https',
+        hostname: 'd21tw07c6rnmp0.cloudfront.net',
       },
       {
         protocol: 'https',

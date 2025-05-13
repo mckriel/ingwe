@@ -53,17 +53,6 @@ export async function test_get_properties() {
 			order_by: "-created" // Most recent first
 		});
 		
-		// Log listing_type values
-		console.log("Listing types:", data.results.map((property: any) => ({
-			id: property.id,
-			listing_type: property.listing_type,
-			purpose: property.purpose,
-			sale_or_rent: property.sale_or_rent,
-			// Log a few other fields that might indicate sale/rent status
-			status: property.status,
-			price_type: property.price_type
-		})));
-		
 		// Return a simplified version for display
 		return {
 			success: true,
@@ -209,21 +198,11 @@ export async function get_formatted_properties(params: {
 		// Default to 12 properties if not specified
 		const limit = params.limit || 12;
 		
-		// First, try searching by location ID
+		// Fetch properties with the provided parameters
 		let data;
-		
-		// Log to track what's happening
-		console.log("Attempting to fetch properties with params:", {
-			location_id: params.location,
-			location_display: params.location_display,
-			location_suburb: params.location_suburb,
-			location_area: params.location_area
-		});
 		
 		// First try to search by location ID
 		if (params.location) {
-			console.log("Searching by location ID:", params.location);
-			
 			data = await get_residential_listings({
 				limit: limit,
 				offset: params.offset,
@@ -241,8 +220,6 @@ export async function get_formatted_properties(params: {
 			
 			// Check if we got any results
 			if (data.results.length === 0 && params.location_display) {
-				console.log(`No results found for location ID ${params.location}, trying to search by name: ${params.location_display}`);
-				
 				// Try searching by location text/display name if ID search returned no results
 				data = await get_residential_listings({
 					limit: limit,
@@ -273,8 +250,6 @@ export async function get_formatted_properties(params: {
 					}
 					
 					if (searchTerm) {
-						console.log(`Still no results, trying with term: ${searchTerm}`);
-						
 						data = await get_residential_listings({
 							limit: limit,
 							offset: params.offset,
@@ -355,8 +330,7 @@ export async function get_formatted_properties(params: {
 				}
 				// If listing_images contains numeric IDs, use fallback image
 				else if (typeof property.listing_images[0] === 'number') {
-					// Previous pattern was incorrect based on 404 errors
-					imageUrl = "/house1.jpeg";  // Use fallback image instead
+					imageUrl = "/house1.jpeg";  // Use fallback image
 				}
 			} 
 			// If no listing images, try header images
@@ -477,7 +451,6 @@ export async function get_residential_listings(params: {
 		
 		// Handle text search parameter (location names, suburbs, etc.)
 		if (params.search) {
-			console.log(`API filtering by text search: "${params.search}"`);
 			queryParams.append("search", params.search);
 		}
 		
@@ -488,21 +461,12 @@ export async function get_residential_listings(params: {
 			  ? parseInt(params.location, 10) 
 			  : params.location;
 			
-			console.log(`API filtering by location ID: ${locationId}`);
-			
 			// Try different possible API parameter names for location
 			queryParams.append("location", locationId.toString());
 			queryParams.append("location_id", locationId.toString());
 			queryParams.append("area", locationId.toString());
-			
-			// Enhanced logging
-			console.log(`Location filter details:
-			- Location ID: ${locationId}
-			- Type: ${typeof locationId}
-			- Attempting multiple parameter names: location, location_id, area`);
 		}
 		if (params.property_type) {
-			console.log(`API filtering by property type: "${params.property_type}"`);
 			queryParams.append("property_type", params.property_type);
 		}
 		if (params.min_price) queryParams.append("min_price", params.min_price.toString());
@@ -522,21 +486,6 @@ export async function get_residential_listings(params: {
 		// Get all fields plus metadata for images
 		const endpoint = `/mashup/api/v1/residential/?meta_fields=listing_images,agent${queryString ? `&${queryString}` : ""}`;
 		
-		// Debug logging for API request
-		console.log("Making API request with filters:", {
-			location: params.location,
-			search: params.search,
-			property_type: params.property_type,
-			min_price: params.min_price,
-			max_price: params.max_price,
-			bedrooms: params.bedrooms,
-			site: params.site,
-			listing_type: params.listing_type,
-			endpoint: endpoint,
-				full_url: endpoint,
-				query_params: queryString
-		});
-		
 		const response = await fetch_with_auth(endpoint);
 		
 		if (!response.ok) {
@@ -547,26 +496,10 @@ export async function get_residential_listings(params: {
 		
 		const data = await response.json();
 
-		// Process the data without logging the entire response
-
-		// If location filtering was requested, ALWAYS do client-side filtering
-		// This ensures we only return properties with the matching location ID
+		// If location filtering was requested, do client-side filtering
 		if (params.location) {
-			console.log(`==== LOCATION FILTERING DIAGNOSTICS ====`);
-			console.log(`Applying client-side location filtering for ID: ${params.location}`);
-			console.log(`Before filtering: ${data.results.length} properties`);
-			
 			// Extract the location ID we're filtering for
 			const targetLocationId = typeof params.location === 'string' ? params.location : String(params.location);
-			
-			console.log(`Target location ID for filtering: ${targetLocationId}`);
-			
-			// Dump the first few properties' location IDs for debugging
-			console.log("Sample property locations (first 5):");
-			data.results.slice(0, 5).forEach((property: any, index: number) => {
-				console.log(`Property ${index + 1} - Location:`, property.location, 
-					"Type:", typeof property.location);
-			});
 			
 			// Filter the results to only include properties with matching location
 			const filteredResults = data.results.filter((property: any) => {
@@ -585,18 +518,8 @@ export async function get_residential_listings(params: {
 				}
 				
 				// Check if the property's location matches our target
-				const isMatch = propertyLocationId === targetLocationId;
-				
-				// For debugging, log some sample matches/non-matches
-				if (Math.random() < 0.1) { // Only log ~10% to avoid overwhelming the console
-					console.log(`Property location check: ${propertyLocationId} vs target ${targetLocationId} => ${isMatch ? 'MATCH' : 'NO MATCH'}`);
-				}
-				
-				return isMatch;
+				return propertyLocationId === targetLocationId;
 			});
-			
-			console.log(`After filtering: ${filteredResults.length} properties match location ${targetLocationId}`);
-			console.log(`==== END LOCATION FILTERING DIAGNOSTICS ====`);
 			
 			// Replace results with filtered results
 			data.results = filteredResults;
@@ -622,8 +545,6 @@ export async function get_listing_details(listing_id: string) {
 
 		if (response.ok) {
 			const data = await response.json();
-
-			// Process the API response
 
 			// Create an array of image URLs that can be used by the frontend
 			const imageUrls = [];
@@ -656,18 +577,12 @@ export async function get_listing_details(listing_id: string) {
 			
 			// If we have listing_images as numeric IDs, try to construct URLs based on common patterns
 			if (data.listing_images?.length > 0 && typeof data.listing_images[0] === 'number') {
-				
-				// Try patterns based on previously observed successful URLs
-				// First try a pattern that worked in previous examples
-				const constructedUrls = data.listing_images.map((id: number) => {
-					// Based on the error logs, our previous pattern was incorrect
-					// Using a pattern that matches previously seen successful URLs
-					return `/house1.jpeg`;  // Fallback to local image since we don't know the correct pattern
-				});
+				// Fallback to local image
+				const constructedUrls = data.listing_images.map(() => `/house1.jpeg`);
 				
 				imageUrls.push(...constructedUrls);
 				
-				// Since we're having trouble constructing URLs, always include at least one fallback
+				// Always include at least one fallback
 				if (!imageUrls.includes('/house1.jpeg')) {
 					imageUrls.push('/house1.jpeg');
 				}

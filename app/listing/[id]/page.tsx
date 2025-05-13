@@ -10,6 +10,7 @@ import PropertyFeatures from "@/app/ui/component/listing/property-features";
 import PropertySidePanel from "@/app/ui/component/listing/property-side-panel";
 import PropertyImageGallery from "@/app/ui/component/listing/property-image-gallery";
 import { get_listing_details, get_formatted_properties } from "@/app/actions/property-actions";
+import { getLocationById } from "@/app/actions/preload-data";
 
 export default function Page() {
   const params = useParams();
@@ -40,6 +41,29 @@ export default function Page() {
           
           // Process the property data
           if (propertyData) {
+            // Try to get location details
+            let locationInfo = "";
+            
+            // If the location is a number ID, fetch the location details
+            if (propertyData.location && (typeof propertyData.location === 'number' || !isNaN(Number(propertyData.location)))) {
+              try {
+                const locationData = await getLocationById(propertyData.location);
+                if (locationData) {
+                  if (locationData.suburb && locationData.area) {
+                    locationInfo = `${locationData.suburb}, ${locationData.area}`;
+                  } else if (locationData.area) {
+                    locationInfo = locationData.area;
+                  } else if (locationData.suburb) {
+                    locationInfo = locationData.suburb;
+                  } else if (locationData.province) {
+                    locationInfo = locationData.province;
+                  }
+                }
+              } catch (error) {
+                // Silently fail, we'll fall back to defaults
+              }
+            }
+            
             setProperty({
               id: propertyData.id,
               title: propertyData.marketing_heading && propertyData.marketing_heading.trim() !== ""
@@ -50,6 +74,7 @@ export default function Page() {
                     ? `${propertyData.property_type} in ${propertyData.location || 'Unknown Location'}`
                     : `Property in ${propertyData.location || 'Unknown Location'}`,
               location: propertyData.location || "Unknown Location",
+              locationString: propertyData.locationString || locationInfo || (typeof propertyData.location === 'string' && isNaN(Number(propertyData.location)) ? propertyData.location : "Unknown Location"),
               price: propertyData.price || 0,
               // Use the processed image URLs from the API helper if available
               images: propertyData.processed_image_urls || 
@@ -86,7 +111,7 @@ export default function Page() {
               baths: Number(propertyData.bathrooms) || 0,
               size: propertyData.floor_size ? Number(propertyData.floor_size) : 0,
               description: propertyData.description || "No description available.",
-              features: ["Property ID: " + propertyData.id, propertyData.property_type],
+              features: [propertyData.property_type],
               // Based on the logs, agent is sometimes a number (ID) rather than an object
               agent: {
                 name: typeof propertyData.agent === 'object' ? propertyData.agent?.name || "Contact Agent" : "Contact Agent",
@@ -125,6 +150,7 @@ export default function Page() {
                 id: matchingProperty.id,
                 title: matchingProperty.title,
                 location: matchingProperty.location || "Unknown Location",
+                locationString: matchingProperty.locationString || (typeof matchingProperty.location === 'string' && isNaN(Number(matchingProperty.location)) ? matchingProperty.location : "Unknown Location"),
                 price: matchingProperty.price,
                 images: matchingProperty.image ? [matchingProperty.image] : ["/house1.jpeg"],
                 beds: matchingProperty.beds || 0,
@@ -132,7 +158,6 @@ export default function Page() {
                 size: matchingProperty.size || 0,
                 description: matchingProperty.description || "No description available.",
                 features: [
-                  matchingProperty.reference ? `Reference: ${matchingProperty.reference}` : "No reference available",
                   matchingProperty.propertyType || "Unknown property type"
                 ],
                 agent: {
@@ -210,7 +235,12 @@ export default function Page() {
       )}
     
       {/* Header */}
-      <PropertyHeader title={property.title} location={property.location} />
+      <PropertyHeader 
+        title={property.title} 
+        location={property.locationString || 
+          (typeof property.location === 'string' && isNaN(Number(property.location)) ? 
+            property.location : "Unknown Location")} 
+      />
 
       {/* Gallery */}
       <PropertyGallery 

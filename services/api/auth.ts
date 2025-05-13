@@ -1,9 +1,5 @@
 // services/api/auth.ts
 
-// Remove unused imports
-// import { ApiError } from "next/dist/server/api-utils";
-// import { headers } from "next/headers";
-
 // api configuration
 const API_BASE_URL = process.env.PROPDATA_API_BASE_URL || "https://api-gw.propdata.net";
 const API_USERNAME = process.env.PROPDATA_API_USERNAME || "";
@@ -34,14 +30,45 @@ if (typeof window !== 'undefined') {
     if (stored) {
       const parsed = JSON.parse(stored);
       if (parsed && parsed.expires_at > Date.now()) {
-        console.log("Loaded token from localStorage");
         token_data = parsed;
-      } else {
-        console.log("Stored token expired or invalid");
       }
     }
   } catch (e) {
-    console.error("Failed to load token from localStorage", e);
+    // Silently fail if localStorage is not available
+  }
+}
+
+// AbortController factory with timeout
+function createAbortController(timeout = 30000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
+  return {
+    controller,
+    timeoutId,
+    signal: controller.signal,
+    cleanup: () => clearTimeout(timeoutId)
+  };
+}
+
+// Enhanced fetch with timeout
+async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout = 30000): Promise<Response> {
+  const { controller, signal, cleanup, timeoutId } = createAbortController(timeout);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal
+    });
+    cleanup();
+    return response;
+  } catch (error) {
+    cleanup();
+    // Check if it's an AbortError (timeout)
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`Request to ${url} timed out after ${timeout}ms`);
+    }
+    throw error;
   }
 }
 
@@ -52,86 +79,33 @@ export async function get_token(): Promise<string> {
 		return token_data.token;
 	}
 
-	console.log("Token cache miss, fetching new token");
 	// get a new token
 	const credentials = Buffer.from(`${API_USERNAME}:${API_PASSWORD}`).toString("base64");
 
 	try {
-		// Enhanced logging for debugging
+		// Set up auth request
 		const auth_url = `${API_BASE_URL}/users/public-api/login/`;
 		const auth_headers = {
 			"Authorization": `Basic ${credentials}`,
-			// "User-Agent": "ingwe", // Removed User-Agent header to test if it's causing issues
 		};
 		
-		console.log("NOTE: User-Agent header has been deliberately removed for testing");
-
-		// Create obfuscated credentials for safe logging
-		// By replacing all but first 3 and last 3 characters with asterisks
-		let safe_credential_logging = "";
-		if (API_USERNAME.length > 6) {
-			safe_credential_logging = API_USERNAME.substring(0, 3) + 
-				'*'.repeat(API_USERNAME.length - 6) + 
-				API_USERNAME.substring(API_USERNAME.length - 3);
-		} else if (API_USERNAME.length > 0) {
-			safe_credential_logging = API_USERNAME[0] + '*'.repeat(API_USERNAME.length - 1);
-		}
-		
-		console.log("=== AUTHENTICATION DEBUG INFO ===");
-		console.log(`API Base URL: ${API_BASE_URL}`);
-		console.log(`Auth endpoint: ${auth_url}`);
-		console.log(`Full request URL: ${auth_url}`);
-		console.log(`HTTP Method: GET`);
-		console.log(`Username used (obfuscated): ${safe_credential_logging}`);
-		console.log(`Username length: ${API_USERNAME.length}`);
-		console.log(`Password length: ${API_PASSWORD.length}`);
-		console.log(`Credentials Base64 length: ${credentials.length}`);
-		console.log(`Credentials Base64 prefix: ${credentials.substring(0, 5)}...`);
-		
-		// Log the complete HTTP request as it would appear on the wire
-		console.log("=== COMPLETE HTTP REQUEST ===");
-		console.log(`GET /users/public-api/login/ HTTP/1.1
-Host: ${new URL(auth_url).host}
-Authorization: Basic ${credentials}
-Accept: */*
-`);
-		console.log("================================");
-		
-		const response = await fetch(auth_url, {
-			method: "GET",
-			headers: auth_headers,
-			cache: "no-store",
-		});
+		// Use enhanced fetch with a 30-second timeout
+    const response = await fetchWithTimeout(auth_url, {
+      method: "GET",
+      headers: auth_headers,
+      cache: "no-store",
+    }, 30000);
 
 		const response_text = await response.text();
-		console.log(`Response status: ${response.status}`);
-		console.log(`Response headers:`, JSON.stringify(Object.fromEntries([...response.headers.entries()]), null, 2));
-		
-		// Log a preview of the response body (limited to avoid exposing sensitive data)
-		if (response_text.length > 0) {
-			console.log(`Response preview (first 100 chars): ${response_text.substring(0, 100)}${response_text.length > 100 ? '...' : ''}`);
-		} else {
-			console.log(`Response body is empty`);
-		}
 
 		if (!response.ok) {
 			let error_message = "Authentication failed";
-			let error_details = {};
-			
 			try {
 				const error_data = JSON.parse(response_text);
-				error_details = error_data;
 				error_message = `Authentication failed: ${error_data.detail || error_data.error_description || error_data.message || JSON.stringify(error_data)}`;
 			} catch (e) {
 				error_message = `Authentication failed: ${response_text}`;
 			}
-			
-			console.error("=== AUTHENTICATION ERROR DETAILS ===");
-			console.error(`Status: ${response.status} ${response.statusText}`);
-			console.error(`Error message: ${error_message}`);
-			console.error(`Error details:`, JSON.stringify(error_details, null, 2));
-			console.error(`Response body: ${response_text}`);
-			console.error("====================================");
 			
 			throw new Error(error_message);
 		}
@@ -140,7 +114,6 @@ Accept: */*
 		try {
 			data = JSON.parse(response_text);
 		} catch (error) {
-			console.error(`Failed to parse response as JSON: ${response_text}`);
 			throw new Error(`Invalid response format from auth endpoint`);
 		}
 
@@ -160,17 +133,29 @@ Accept: */*
 		if (typeof window !== 'undefined') {
 			try {
 				localStorage.setItem('propdata_token_data', JSON.stringify(token_data));
-				console.log("Token saved to localStorage for persistence across hot reloads");
 			} catch (e) {
-				console.error("Failed to save token to localStorage", e);
+				// Silently fail if localStorage is not available
 			}
 		}
 		
-		console.log("New token obtained and cached");
 		return token_data.token;
 	} catch (error) {
-		console.error(`Failed to get authentication token: ${error}`);
-		throw error; // Throw the original error for better debugging
+		// For API connectivity issues, provide a more helpful error message
+		if (error instanceof Error) {
+			if (error.message.includes('timed out') || error.message.includes('fetch failed')) {
+				console.error(`API connection failed - please check your internet connection or API endpoint (${API_BASE_URL})`);
+				
+				// For development, provide mock data if environment variable is set
+				if (process.env.NODE_ENV === 'development' && process.env.USE_MOCK_DATA === 'true') {
+					console.log("Using mock data for development");
+					// Return a fake token that will be rejected if actual API becomes available
+					return "mock_development_token";
+				}
+			}
+		}
+		
+		console.error(`Failed to get authentication token:`, error);
+		throw error;
 	}
 }
 
@@ -179,20 +164,51 @@ export async function fetch_with_auth(endpoint: string, options: RequestInit = {
 	try {
 		const token = await get_token();
 
+		// Don't attempt API requests with mock token
+		if (token === "mock_development_token") {
+			// For development mocking, return a mock response
+			const mockResponse = new Response(JSON.stringify({
+				count: 0,
+				results: []
+			}), {
+				status: 200,
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			});
+			return mockResponse;
+		}
+
 		// merge headers
 		const headers = {
 			"Authorization": `Bearer ${token}`,
-			// "User-Agent": "ingwe", // Removed User-Agent header to test if it's causing issues
 			...options.headers,	
 		};
 
-		return fetch(`${API_BASE_URL}${endpoint}`, {
+		// Use enhanced fetch with a 30-second timeout
+		return fetchWithTimeout(`${API_BASE_URL}${endpoint}`, {
 			...options,
 			headers,
 			cache: "no-store",
-		});
+		}, 30000);
 	} catch (error) {
 		console.error("Error making authenticated request:", error);
+		
+		// For development, provide a mock response if environment variable is set
+		if (process.env.NODE_ENV === 'development' && process.env.USE_MOCK_DATA === 'true') {
+			console.log("Using mock data for development");
+			const mockResponse = new Response(JSON.stringify({
+				count: 0,
+				results: []
+			}), {
+				status: 200,
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			});
+			return mockResponse;
+		}
+		
 		throw error;
 	}
 }
@@ -204,18 +220,15 @@ export async function renew_token(): Promise<string> {
 	}
 
 	try {
-		console.log("Renewing token");
-		const response = await fetch(`${API_BASE_URL}/users/api/v1/renew-token/`, {
+		const response = await fetchWithTimeout(`${API_BASE_URL}/users/api/v1/renew-token/`, {
 			method: "GET",
 			headers: {
 				"Authorization": `Bearer ${token_data.token}`,
-				// "User-Agent": "ingwe", // Removed User-Agent header to test if it's causing issues
 			},
 			cache: "no-store",
-		});
+		}, 30000);
 
 		if (!response.ok) {
-			console.error("Token renewal failed, getting new token");
 			return get_token();
 		}
 
@@ -230,16 +243,13 @@ export async function renew_token(): Promise<string> {
 		if (typeof window !== 'undefined') {
 			try {
 				localStorage.setItem('propdata_token_data', JSON.stringify(token_data));
-				console.log("Renewed token saved to localStorage");
 			} catch (e) {
-				console.error("Failed to save renewed token to localStorage", e);
+				// Silently fail if localStorage is not available
 			}
 		}
 
-		console.log("Token renewed successfully");
 		return token_data.token;
 	} catch (error) {
-		console.error("Failed to renew token:", error);
 		return get_token();
 	}
 }

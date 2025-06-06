@@ -38,7 +38,7 @@ export default function NavigationBar() {
         <NavItem label="Rent" href="/rent" isActive={pathname === "/rent"} />
         <NavItem label="Selling" href="/sell" isActive={pathname === "/sell"} />
         <NavItem label="Calculators" href="/calculator" isActive={pathname.startsWith("/calculator")} />
-        <NavItem label="Company" href="/company" isActive={pathname.startsWith("/company")} />
+        <NavItem label="About" href="/about" isActive={pathname.startsWith("/about")} />
       </div>
 
       {/* Mobile Hamburger Button */}
@@ -112,9 +112,9 @@ export default function NavigationBar() {
             onClick={closeMenu}
           />
           <NavItem
-            label="Company"
-            href="/company"
-            isActive={pathname.startsWith("/company")}
+            label="About"
+            href="/about"
+            isActive={pathname.startsWith("/about")}
             onClick={closeMenu}
           />
         </div>

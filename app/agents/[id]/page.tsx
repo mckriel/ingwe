@@ -1,24 +1,31 @@
 'use client';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AgentContactModal from '@/app/ui/component/agent-contact-modal';
 
 interface AgentPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function AgentPage({ params }: AgentPageProps) {
   const [is_contact_modal_open, set_is_contact_modal_open] = useState(false);
+  const [agent_id, set_agent_id] = useState<string>('');
 
   const open_contact_modal = () => set_is_contact_modal_open(true);
   const close_contact_modal = () => set_is_contact_modal_open(false);
 
+  useEffect(() => {
+    params.then((resolved_params) => {
+      set_agent_id(resolved_params.id);
+    });
+  }, [params]);
+
   // Sample agent data - in real app this would come from API
   const agent = {
-    id: params.id,
+    id: agent_id,
     name: "Noeleen Naidoo",
     bio: "In hac habitasse platea dictumst. Aliquam nec venenatis lorem. Pellentesque congue volutpat ex vitae consectetur. Pellentesque convallis. Pellentesque orci velit posuere lorem fermentum, tempus quis eu viverra gravida. Quisque rutrum dignissim elit ut varuius mauris rutcusr et tristique eros blandit vehicula. Lorem ipsum dolor sit amet consectetur adipiscing elit. Vivamus gravida.",
     image: "/house1.jpeg", // Placeholder image

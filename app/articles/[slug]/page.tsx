@@ -1,14 +1,23 @@
 'use client';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 
 interface ArticlePageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 export default function ArticlePage({ params }: ArticlePageProps) {
+  const [article_slug, set_article_slug] = useState<string>('');
+
+  useEffect(() => {
+    params.then((resolved_params) => {
+      set_article_slug(resolved_params.slug);
+    });
+  }, [params]);
+
   // Sample article data - in real app this would come from API/CMS
   const article = {
     title: "Lorem Ipsum dolor sit amet, consectetur.",

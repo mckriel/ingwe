@@ -38,6 +38,8 @@ export default function NavigationBar() {
         <NavItem label="Rent" href="/rent" isActive={pathname === "/rent"} />
         <NavItem label="Selling" href="/sell" isActive={pathname === "/sell"} />
         <NavItem label="Calculators" href="/calculator" isActive={pathname.startsWith("/calculator")} />
+        <NavItem label="Agents" href="/agents" isActive={pathname.startsWith("/agents")} />
+        <NavItem label="Articles" href="/articles" isActive={pathname.startsWith("/articles")} />
         <NavItem label="About" href="/about" isActive={pathname.startsWith("/about")} />
       </div>
 
@@ -109,6 +111,18 @@ export default function NavigationBar() {
             label="Calculators"
             href="/calculator"
             isActive={pathname.startsWith("/calculator")}
+            onClick={closeMenu}
+          />
+          <NavItem
+            label="Agents"
+            href="/agents"
+            isActive={pathname.startsWith("/agents")}
+            onClick={closeMenu}
+          />
+          <NavItem
+            label="Articles"
+            href="/articles"
+            isActive={pathname.startsWith("/articles")}
             onClick={closeMenu}
           />
           <NavItem

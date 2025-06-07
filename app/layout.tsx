@@ -31,9 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <div className="flex-grow container mx-auto p-4 text-center min-h-screen">
                 { children }
               </div>
-              <footer className="w-full bg-gray-800 text-white">
-                  <Footer />
-              </footer>
+              <Footer />
             </main>
         </body>
     </html>

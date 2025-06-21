@@ -6,9 +6,25 @@ import NavItem from "@/app/ui/component/header/top-navigation-bar/nav-item";
 import Image from "next/image";
 import Link from "next/link";
 
-export default function NavigationBar() {
+interface NavigationBarProps {
+    property?: {
+        price?: string | number;
+    };
+}
+
+export default function NavigationBar({ property }: NavigationBarProps) {
     const pathname = usePathname();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    // Determine if property is for sale or rent based on price
+    const is_rental = property?.price && 
+        (typeof property.price === 'string' && 
+         (property.price.toLowerCase().includes('rental') || 
+          property.price.toLowerCase().includes('rent') ||
+          property.price.toLowerCase().includes('p/m') ||
+          property.price.toLowerCase().includes('per month')));
+    
+    const is_sale = property && !is_rental || false;
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
     const closeMenu = () => setIsMenuOpen(false);
@@ -34,8 +50,8 @@ export default function NavigationBar() {
 
       {/* Desktop Navigation */}
       <div className="hidden md:flex space-x-6 absolute left-1/2 transform -translate-x-1/2">
-        <NavItem label="Buy" href="/buy" isActive={pathname === "/buy"} />
-        <NavItem label="Rent" href="/rent" isActive={pathname === "/rent"} />
+        <NavItem label="Buy" href="/buy" isActive={pathname === "/buy" || !!is_sale} />
+        <NavItem label="Rent" href="/rent" isActive={pathname === "/rent" || !!is_rental} />
         <NavItem label="Selling" href="/sell" isActive={pathname === "/sell"} />
         <NavItem label="Calculators" href="/calculator" isActive={pathname.startsWith("/calculator")} />
         <NavItem label="Agents" href="/agents" isActive={pathname.startsWith("/agents")} />
@@ -92,13 +108,13 @@ export default function NavigationBar() {
           <NavItem
             label="Buy"
             href="/buy"
-            isActive={pathname === "/buy"}
+            isActive={pathname === "/buy" || !!is_sale}
             onClick={closeMenu}
           />
           <NavItem
             label="Rent"
             href="/rent"
-            isActive={pathname === "/rent"}
+            isActive={pathname === "/rent" || !!is_rental}
             onClick={closeMenu}
           />
           <NavItem

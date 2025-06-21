@@ -7,6 +7,11 @@ export default function Page() {
   const [purchase_price, set_purchase_price] = useState(1000000);
   const [loan_amount, set_loan_amount] = useState(1000000);
 
+  // Set page title
+  useEffect(() => {
+    document.title = 'Bond & Transfer Calculator | Ingwe | The Property Company';
+  }, []);
+
   const [bond_registration_costs, set_bond_registration_costs] = useState(0);
   const [bank_initiation_fee, set_bank_initiation_fee] = useState(0);
   const [bond_deeds_office_levy, set_bond_deeds_office_levy] = useState(0);
@@ -69,7 +74,7 @@ export default function Page() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-100">
+    <main className="min-h-screen bg-white">
       <div className="container mx-auto px-4 py-8">
         <CalculatorTabs />
         

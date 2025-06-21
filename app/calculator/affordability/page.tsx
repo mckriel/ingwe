@@ -6,6 +6,11 @@ import { useState, useEffect } from 'react';
 export default function Page() {
   const [gross_monthly_income, set_gross_monthly_income] = useState(1000000);
   const [net_monthly_income, set_net_monthly_income] = useState(0);
+
+  // Set page title
+  useEffect(() => {
+    document.title = 'Affordability Calculator | Ingwe | The Property Company';
+  }, []);
   const [monthly_expenses, set_monthly_expenses] = useState(0);
   const [interest_rate, set_interest_rate] = useState(11.65);
   const [loan_term, set_loan_term] = useState(20);
@@ -48,7 +53,7 @@ export default function Page() {
 
 
   return (
-    <main className="min-h-screen bg-gray-100">
+    <main className="min-h-screen bg-white">
       <div className="container mx-auto px-4 py-8">
         <CalculatorTabs />
         

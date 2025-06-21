@@ -10,6 +10,7 @@ import PropertyFeatures from "@/app/ui/component/listing/property-features";
 import PropertySidePanel from "@/app/ui/component/listing/property-side-panel";
 import PropertyImageGallery from "@/app/ui/component/listing/property-image-gallery";
 import OtherListings from "@/app/ui/component/listing/other-listings";
+import NavigationBar from "@/app/ui/component/header/top-navigation-bar/navigation-bar";
 import { get_listing_details, get_formatted_properties, get_agent_details } from "@/app/actions/property-actions";
 import { getLocationById } from "@/app/actions/preload-data";
 import { propertyCache, cacheKeys } from "@/lib/cache";
@@ -54,14 +55,15 @@ export default function Page() {
           
           // Process the property data
           if (propertyData) {
+            const typedPropertyData = propertyData as any;
             // Fetch full agent details if we have an agent ID
             let agent_details = null;
-            if (propertyData.agent && typeof propertyData.agent === 'number') {
-              const agentCacheKey = cacheKeys.agentDetails(propertyData.agent);
+            if (typedPropertyData.agent && typeof typedPropertyData.agent === 'number') {
+              const agentCacheKey = cacheKeys.agentDetails(typedPropertyData.agent);
               agent_details = propertyCache.get(agentCacheKey);
               
               if (!agent_details) {
-                agent_details = await get_agent_details(propertyData.agent);
+                agent_details = await get_agent_details(typedPropertyData.agent);
                 if (agent_details) {
                   // Cache agent details for 10 minutes
                   propertyCache.set(agentCacheKey, agent_details, 600);
@@ -72,49 +74,49 @@ export default function Page() {
             const property_features = [];
             
             // Boolean features
-            if (propertyData.pets_allowed) property_features.push("Pet Friendly");
-            if (propertyData.pool) property_features.push("Swimming Pool");
-            if (propertyData.security) property_features.push("Security");
-            if (propertyData.borehole) property_features.push("Borehole");
-            if (propertyData.solar_geyser) property_features.push("Solar Geyser");
-            if (propertyData.solar_panel) property_features.push("Solar Panels");
-            if (propertyData.gas_geyser) property_features.push("Gas Geyser");
-            if (propertyData.backup_battery_inverter) property_features.push("Backup Battery/Inverter");
+            if (typedPropertyData.pets_allowed) property_features.push("Pet Friendly");
+            if (typedPropertyData.pool) property_features.push("Swimming Pool");
+            if (typedPropertyData.security) property_features.push("Security");
+            if (typedPropertyData.borehole) property_features.push("Borehole");
+            if (typedPropertyData.solar_geyser) property_features.push("Solar Geyser");
+            if (typedPropertyData.solar_panel) property_features.push("Solar Panels");
+            if (typedPropertyData.gas_geyser) property_features.push("Gas Geyser");
+            if (typedPropertyData.backup_battery_inverter) property_features.push("Backup Battery/Inverter");
             
             // Numeric features (only show if > 0)
-            if (parseFloat(propertyData.balcony || "0") > 0) property_features.push("Balcony");
-            if (parseFloat(propertyData.patio || "0") > 0) property_features.push("Patio");
-            if (parseFloat(propertyData.flatlet || "0") > 0) property_features.push("Flatlet");
-            if (parseFloat(propertyData.study || "0") > 0) property_features.push("Study");
-            if (parseFloat(propertyData.garages || "0") > 0) {
-              const garage_count = parseInt(propertyData.garages);
+            if (parseFloat(typedPropertyData.balcony || "0") > 0) property_features.push("Balcony");
+            if (parseFloat(typedPropertyData.patio || "0") > 0) property_features.push("Patio");
+            if (parseFloat(typedPropertyData.flatlet || "0") > 0) property_features.push("Flatlet");
+            if (parseFloat(typedPropertyData.study || "0") > 0) property_features.push("Study");
+            if (parseFloat(typedPropertyData.garages || "0") > 0) {
+              const garage_count = parseInt(typedPropertyData.garages);
               property_features.push(`${garage_count} Garage${garage_count !== 1 ? 's' : ''}`);
             }
-            if (parseFloat(propertyData.carports || "0") > 0) {
-              const carport_count = parseInt(propertyData.carports);
+            if (parseFloat(typedPropertyData.carports || "0") > 0) {
+              const carport_count = parseInt(typedPropertyData.carports);
               property_features.push(`${carport_count} Carport${carport_count !== 1 ? 's' : ''}`);
             }
             
             // Array features
-            if (propertyData.exterior && propertyData.exterior.length > 0) {
-              propertyData.exterior.forEach((item: string) => property_features.push(item));
+            if (typedPropertyData.exterior && typedPropertyData.exterior.length > 0) {
+              typedPropertyData.exterior.forEach((item: string) => property_features.push(item));
             }
-            if (propertyData.flooring && propertyData.flooring.length > 0) {
-              propertyData.flooring.forEach((item: string) => property_features.push(`${item} Flooring`));
+            if (typedPropertyData.flooring && typedPropertyData.flooring.length > 0) {
+              typedPropertyData.flooring.forEach((item: string) => property_features.push(`${item} Flooring`));
             }
-            if (propertyData.roof && propertyData.roof.length > 0) {
-              propertyData.roof.forEach((item: string) => property_features.push(`${item} Roof`));
+            if (typedPropertyData.roof && typedPropertyData.roof.length > 0) {
+              typedPropertyData.roof.forEach((item: string) => property_features.push(`${item} Roof`));
             }
-            if (propertyData.walling && propertyData.walling.length > 0) {
-              propertyData.walling.forEach((item: string) => property_features.push(item));
+            if (typedPropertyData.walling && typedPropertyData.walling.length > 0) {
+              typedPropertyData.walling.forEach((item: string) => property_features.push(item));
             }
             // Try to get location details
             let locationInfo = "";
             
             // If the location is a number ID, fetch the location details
-            if (propertyData.location && (typeof propertyData.location === 'number' || !isNaN(Number(propertyData.location)))) {
+            if (typedPropertyData.location && (typeof typedPropertyData.location === 'number' || !isNaN(Number(typedPropertyData.location)))) {
               try {
-                const locationData = await getLocationById(propertyData.location);
+                const locationData = await getLocationById(typedPropertyData.location);
                 if (locationData) {
                   if (locationData.suburb && locationData.area) {
                     locationInfo = `${locationData.suburb}, ${locationData.area}`;
@@ -131,23 +133,23 @@ export default function Page() {
               }
             }
             
-            setProperty({
-              id: propertyData.id,
-              title: propertyData.marketing_heading && propertyData.marketing_heading.trim() !== ""
-                ? propertyData.marketing_heading
-                : propertyData.heading
-                  ? propertyData.heading
-                  : propertyData.property_type 
-                    ? `${propertyData.property_type} in ${propertyData.location || 'Unknown Location'}`
-                    : `Property in ${propertyData.location || 'Unknown Location'}`,
-              location: propertyData.location || "Unknown Location",
-              locationString: propertyData.locationString || locationInfo || (typeof propertyData.location === 'string' && isNaN(Number(propertyData.location)) ? propertyData.location : "Unknown Location"),
-              price: propertyData.price || 0,
+            const propertyObject = {
+              id: typedPropertyData.id,
+              title: typedPropertyData.marketing_heading && typedPropertyData.marketing_heading.trim() !== ""
+                ? typedPropertyData.marketing_heading
+                : typedPropertyData.heading
+                  ? typedPropertyData.heading
+                  : typedPropertyData.property_type 
+                    ? `${typedPropertyData.property_type} in ${typedPropertyData.location || 'Unknown Location'}`
+                    : `Property in ${typedPropertyData.location || 'Unknown Location'}`,
+              location: typedPropertyData.location || "Unknown Location",
+              locationString: typedPropertyData.locationString || locationInfo || (typeof typedPropertyData.location === 'string' && isNaN(Number(typedPropertyData.location)) ? typedPropertyData.location : "Unknown Location"),
+              price: typedPropertyData.price || 0,
               // Use the processed image URLs from the API helper if available
-              images: propertyData.processed_image_urls || 
+              images: typedPropertyData.processed_image_urls || 
                 // Fallback to our own processing logic if needed
-                (Array.isArray(propertyData.listing_images) && propertyData.listing_images.length > 0
-                  ? propertyData.listing_images.map((img: any) => {
+                (Array.isArray(typedPropertyData.listing_images) && typedPropertyData.listing_images.length > 0
+                  ? typedPropertyData.listing_images.map((img: any) => {
                       // If it's an object, try to get the URL
                       if (typeof img === 'object' && img !== null) {
                         // Look for standard URL fields
@@ -174,19 +176,24 @@ export default function Page() {
                       return null;
                     }).filter(Boolean).filter((url: string) => url && url.trim() !== "")
                   : []),
-              beds: Number(propertyData.bedrooms) || 0,
-              baths: Number(propertyData.bathrooms) || 0,
-              size: propertyData.floor_size ? Number(propertyData.floor_size) : 0,
-              description: propertyData.description || "No description available.",
+              beds: Number(typedPropertyData.bedrooms) || 0,
+              baths: Number(typedPropertyData.bathrooms) || 0,
+              size: typedPropertyData.floor_size ? Number(typedPropertyData.floor_size) : 0,
+              description: typedPropertyData.description || "No description available.",
               features: property_features,
               // Use full agent details if available, otherwise fall back to meta.agent
               agent: {
-                name: agent_details?.full_name || propertyData.meta?.agent?.full_name || "Contact Agent",
+                name: agent_details?.full_name || typedPropertyData.meta?.agent?.full_name || "Contact Agent",
                 image: agent_details?.image_url || "",
-                contact: agent_details?.email || agent_details?.cell_number || propertyData.meta?.agent?.email || "info@ingwe.co.za",
-                email: agent_details?.email || propertyData.meta?.agent?.email || "info@ingwe.co.za",
+                contact: agent_details?.email || agent_details?.cell_number || typedPropertyData.meta?.agent?.email || "info@ingwe.co.za",
+                email: agent_details?.email || typedPropertyData.meta?.agent?.email || "info@ingwe.co.za",
               },
-            });
+            };
+
+            setProperty(propertyObject);
+            
+            // Set dynamic page title
+            document.title = `${propertyObject.title} | Ingwe | The Property Company`;
             
             setUsingFallback(false);
           }
@@ -212,7 +219,7 @@ export default function Page() {
             if (matchingProperty) {
               
               // Format the property data from listings
-              setProperty({
+              const fallbackProperty = {
                 id: matchingProperty.id,
                 title: matchingProperty.title,
                 location: matchingProperty.location || "Unknown Location",
@@ -229,7 +236,12 @@ export default function Page() {
                   image: "", // No fallback image for agent
                   contact: "info@ingwe.co.za",
                 },
-              });
+              };
+
+              setProperty(fallbackProperty);
+              
+              // Set dynamic page title
+              document.title = `${fallbackProperty.title} | Ingwe | The Property Company`;
             } else {
               // If we can't find the property in listings, show an error
               setError("Property not found");
@@ -291,7 +303,15 @@ export default function Page() {
   }
 
   return (
-    <main className="max-w-screen-xl mx-auto p-4 text-left mb-20">
+    <>
+      {/* Custom Navigation Bar for Property Page */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow-md">
+        <NavigationBar property={property} />
+      </div>
+      
+      {/* Add padding to account for fixed header */}
+      <div className="pt-20">
+        <main className="max-w-screen-xl mx-auto p-4 text-left mb-20">
       {usingFallback && !property.description && (
         <div className="mb-4 p-3 bg-yellow-100 border border-yellow-300 rounded text-yellow-700">
           <p>Using limited property data. Some details may not be available.</p>
@@ -342,6 +362,8 @@ export default function Page() {
         current_property_id={property.id?.toString()} 
         location={property.location}
       />
-    </main>
+        </main>
+      </div>
+    </>
   );
 }

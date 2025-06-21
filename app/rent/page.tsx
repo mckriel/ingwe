@@ -22,6 +22,11 @@ interface Property {
 export default function Page() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+
+  // Set page title
+  useEffect(() => {
+    document.title = 'Rent Properties | Ingwe | The Property Company';
+  }, []);
   const [searchParams, setSearchParams] = useState({
     location: "",
     location_display: undefined as string | undefined,

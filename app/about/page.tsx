@@ -1,7 +1,12 @@
 'use client';
 import Image from 'next/image';
+import { useEffect } from 'react';
 
 export default function Page() {
+    // Set page title
+    useEffect(() => {
+        document.title = 'About Us | Ingwe | The Property Company';
+    }, []);
     return (
         <div className="min-h-screen bg-white">
             {/* Hero Section */}

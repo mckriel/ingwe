@@ -1,9 +1,14 @@
 'use client';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function AgentsPage() {
     const [active_filter, set_active_filter] = useState('All');
+
+    // Set page title
+    useEffect(() => {
+        document.title = 'Our Agents | Ingwe | The Property Company';
+    }, []);
 
     const filters = [
         'Houtbay',

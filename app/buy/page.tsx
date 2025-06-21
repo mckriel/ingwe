@@ -22,6 +22,11 @@ interface Property {
 export default function Page() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+
+  // Set page title
+  useEffect(() => {
+    document.title = 'Buy Properties | Ingwe | The Property Company';
+  }, []);
   const [offset, setOffset] = useState<number>(0);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const PAGE_SIZE = 12; // Number of properties to load per page

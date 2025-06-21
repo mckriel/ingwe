@@ -59,7 +59,6 @@ export default function OtherListings({ current_property_id, location }: OtherLi
             locationString: prop.locationString || 'Unknown Location',
           }));
 
-        console.log('All properties loaded:', filtered_properties.map((p, i) => `${i}: ${p.title} (ID: ${p.id})`));
         set_properties(filtered_properties);
       } catch (error) {
         console.error('Failed to fetch other listings:', error);
@@ -127,7 +126,6 @@ export default function OtherListings({ current_property_id, location }: OtherLi
         >
           {properties.map((property, index) => {
             const is_active = index === active_slide_index;
-            console.log(`Property ${index}: ${property.title.substring(0, 20)}... - Active: ${is_active}`);
             return (
             <SwiperSlide key={property.id}>
               <div className="bg-white">
@@ -255,7 +253,6 @@ export default function OtherListings({ current_property_id, location }: OtherLi
           className="other-listings-prev absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-6 z-10 w-12 h-12 bg-[#D1DA68] rounded-full flex items-center justify-center hover:bg-[#C5CE5F] transition-colors shadow-lg"
           onClick={() => {
             const new_index = Math.max(0, active_slide_index - 1);
-            console.log(`Manual prev: from ${active_slide_index} to ${new_index}`);
             swiper_instance?.slideTo(new_index);
           }}
         >
@@ -268,7 +265,6 @@ export default function OtherListings({ current_property_id, location }: OtherLi
           className="other-listings-next absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-6 z-10 w-12 h-12 bg-[#D1DA68] rounded-full flex items-center justify-center hover:bg-[#C5CE5F] transition-colors shadow-lg"
           onClick={() => {
             const new_index = Math.min(properties.length - 1, active_slide_index + 1);
-            console.log(`Manual next: from ${active_slide_index} to ${new_index}`);
             swiper_instance?.slideTo(new_index);
           }}
         >

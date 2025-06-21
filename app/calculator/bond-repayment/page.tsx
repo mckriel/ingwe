@@ -6,6 +6,11 @@ import { useState, useEffect } from 'react';
 export default function Page() {
   const [purchase_price, set_purchase_price] = useState(1000000);
   const [deposit, set_deposit] = useState(0);
+
+  // Set page title
+  useEffect(() => {
+    document.title = 'Bond Repayment Calculator | Ingwe | The Property Company';
+  }, []);
   const [interest_rate, set_interest_rate] = useState(11.65);
   const [loan_term, set_loan_term] = useState(20);
 
@@ -63,7 +68,7 @@ export default function Page() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-100">
+    <main className="min-h-screen bg-white">
       <div className="container mx-auto px-4 py-8">
         <CalculatorTabs />
         

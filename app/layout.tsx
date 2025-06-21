@@ -3,6 +3,7 @@ import TopNav from "@/app/ui/component/header/top-navigation-bar/navigation-bar"
 import Footer from "@/app/ui/component/footer/footer";
 import { Lato } from 'next/font/google';
 import { preloadCommonLocations, preloadPropertyTypes } from "./actions/preload-data";
+import { Metadata } from 'next';
 
 const lato = Lato({
   subsets: ['latin'],
@@ -13,6 +14,11 @@ const lato = Lato({
 // Immediate server-side preload when app starts
 preloadCommonLocations();
 preloadPropertyTypes();
+
+export const metadata: Metadata = {
+  title: 'Ingwe | The Property Company',
+  description: 'Find your perfect property with Ingwe - The Property Company. Buy, rent, or sell properties across South Africa.',
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

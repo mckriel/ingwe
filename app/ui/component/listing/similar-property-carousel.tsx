@@ -56,7 +56,7 @@ export default function SimilarPropertyCarousel({
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     onError={(e) => {
-                      const slideElement = e.currentTarget.closest('.swiper-slide');
+                      const slideElement = e.currentTarget.closest('.swiper-slide') as HTMLElement;
                       if (slideElement) {
                         slideElement.style.display = 'none';
                       }

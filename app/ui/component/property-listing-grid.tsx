@@ -77,13 +77,10 @@ export default function PropertyListingGrid({
                   beds={property.beds}
                   baths={property.baths}
                   size={property.size}
-                  reference={property.reference}
-                  description={property.description}
                   propertyType={listingType === "rent" ? "To Let" : "For Sale"}
                   location={property.location}
                   locationString={property.locationString}
                   locationDetail={property.locationDetail}
-                  site={property.site}
                 />
               </div>
             ))

@@ -24,7 +24,11 @@ interface SimilarPropertyCarouselProps {
 export default function SimilarPropertyCarousel({
     properties,
   }: SimilarPropertyCarouselProps) {
-    if (!properties || properties.length === 0) return null;
+    const validProperties = properties?.filter(prop => 
+      prop.image && prop.image.trim() !== "" && !prop.image.includes('/house1.jpeg')
+    ) || [];
+    
+    if (validProperties.length === 0) return null;
   
     return (
       <section className="max-w-screen-xl mx-auto py-8">
@@ -41,21 +45,21 @@ export default function SimilarPropertyCarousel({
             1024: { slidesPerView: 3 },   // 3 slides at >=1024px
           }}
         >
-          {properties.map((prop) => (
+          {validProperties.map((prop) => (
             <SwiperSlide key={prop.id}>
               <div className="bg-white rounded-lg shadow overflow-hidden p-4">
-                {/* Image */}
                 <div className="relative w-full h-48 mb-4">
                   <Image
-                    src={prop.image && prop.image.trim() !== "" ? prop.image : "/house1.jpeg"}
+                    src={prop.image}
                     alt={prop.title}
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     onError={(e) => {
-                      // Replace with fallback image on error
-                      const imgElement = e.target as HTMLImageElement;
-                      imgElement.src = "/house1.jpeg";
+                      const slideElement = e.currentTarget.closest('.swiper-slide');
+                      if (slideElement) {
+                        slideElement.style.display = 'none';
+                      }
                     }}
                   />
                   {/* Optional Contact Agent Badge */}

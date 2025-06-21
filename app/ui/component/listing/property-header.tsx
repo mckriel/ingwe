@@ -10,7 +10,7 @@ export default function PropertyHeader({ title, location }: PropertyHeaderProps)
   return (
     <header className="mb-4">
       <h1 className="text-3xl font-bold">{title}</h1>
-      <p className="text-gray-600">{location}</p>
+      <p className="text-lg text-gray-600">{location}</p>
     </header>
   );
 }

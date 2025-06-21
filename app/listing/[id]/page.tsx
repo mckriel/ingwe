@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import PropertyHeader from "@/app/ui/component/listing/property-header";
 import PropertyGallery from "@/app/ui/component/listing/property-gallery";
 import PropertyQuickStats from "@/app/ui/component/listing/property-quick-stats";
@@ -9,8 +9,10 @@ import PropertyDescription from "@/app/ui/component/listing/property-description
 import PropertyFeatures from "@/app/ui/component/listing/property-features";
 import PropertySidePanel from "@/app/ui/component/listing/property-side-panel";
 import PropertyImageGallery from "@/app/ui/component/listing/property-image-gallery";
-import { get_listing_details, get_formatted_properties } from "@/app/actions/property-actions";
+import OtherListings from "@/app/ui/component/listing/other-listings";
+import { get_listing_details, get_formatted_properties, get_agent_details } from "@/app/actions/property-actions";
 import { getLocationById } from "@/app/actions/preload-data";
+import { propertyCache, cacheKeys } from "@/lib/cache";
 
 export default function Page() {
   const params = useParams();
@@ -36,11 +38,76 @@ export default function Page() {
         
         // First, try to fetch the property directly from the API
         try {
-          // Fetch the specific property by ID
-          const propertyData = await get_listing_details(propertyId);
+          // Check cache first
+          const cacheKey = cacheKeys.propertyDetails(propertyId);
+          let propertyData = propertyCache.get(cacheKey);
+          
+          if (!propertyData) {
+            // Fetch the specific property by ID
+            propertyData = await get_listing_details(propertyId);
+            
+            // Cache for 5 minutes
+            if (propertyData) {
+              propertyCache.set(cacheKey, propertyData, 300);
+            }
+          }
           
           // Process the property data
           if (propertyData) {
+            // Fetch full agent details if we have an agent ID
+            let agent_details = null;
+            if (propertyData.agent && typeof propertyData.agent === 'number') {
+              const agentCacheKey = cacheKeys.agentDetails(propertyData.agent);
+              agent_details = propertyCache.get(agentCacheKey);
+              
+              if (!agent_details) {
+                agent_details = await get_agent_details(propertyData.agent);
+                if (agent_details) {
+                  // Cache agent details for 10 minutes
+                  propertyCache.set(agentCacheKey, agent_details, 600);
+                }
+              }
+            }
+            // Extract property features
+            const property_features = [];
+            
+            // Boolean features
+            if (propertyData.pets_allowed) property_features.push("Pet Friendly");
+            if (propertyData.pool) property_features.push("Swimming Pool");
+            if (propertyData.security) property_features.push("Security");
+            if (propertyData.borehole) property_features.push("Borehole");
+            if (propertyData.solar_geyser) property_features.push("Solar Geyser");
+            if (propertyData.solar_panel) property_features.push("Solar Panels");
+            if (propertyData.gas_geyser) property_features.push("Gas Geyser");
+            if (propertyData.backup_battery_inverter) property_features.push("Backup Battery/Inverter");
+            
+            // Numeric features (only show if > 0)
+            if (parseFloat(propertyData.balcony || "0") > 0) property_features.push("Balcony");
+            if (parseFloat(propertyData.patio || "0") > 0) property_features.push("Patio");
+            if (parseFloat(propertyData.flatlet || "0") > 0) property_features.push("Flatlet");
+            if (parseFloat(propertyData.study || "0") > 0) property_features.push("Study");
+            if (parseFloat(propertyData.garages || "0") > 0) {
+              const garage_count = parseInt(propertyData.garages);
+              property_features.push(`${garage_count} Garage${garage_count !== 1 ? 's' : ''}`);
+            }
+            if (parseFloat(propertyData.carports || "0") > 0) {
+              const carport_count = parseInt(propertyData.carports);
+              property_features.push(`${carport_count} Carport${carport_count !== 1 ? 's' : ''}`);
+            }
+            
+            // Array features
+            if (propertyData.exterior && propertyData.exterior.length > 0) {
+              propertyData.exterior.forEach((item: string) => property_features.push(item));
+            }
+            if (propertyData.flooring && propertyData.flooring.length > 0) {
+              propertyData.flooring.forEach((item: string) => property_features.push(`${item} Flooring`));
+            }
+            if (propertyData.roof && propertyData.roof.length > 0) {
+              propertyData.roof.forEach((item: string) => property_features.push(`${item} Roof`));
+            }
+            if (propertyData.walling && propertyData.walling.length > 0) {
+              propertyData.walling.forEach((item: string) => property_features.push(item));
+            }
             // Try to get location details
             let locationInfo = "";
             
@@ -106,19 +173,18 @@ export default function Page() {
                       // If we got here, we couldn't extract a URL
                       return null;
                     }).filter(Boolean).filter((url: string) => url && url.trim() !== "")
-                  : ["/house1.jpeg"]),
+                  : []),
               beds: Number(propertyData.bedrooms) || 0,
               baths: Number(propertyData.bathrooms) || 0,
               size: propertyData.floor_size ? Number(propertyData.floor_size) : 0,
               description: propertyData.description || "No description available.",
-              features: [propertyData.property_type],
-              // Based on the logs, agent is sometimes a number (ID) rather than an object
+              features: property_features,
+              // Use full agent details if available, otherwise fall back to meta.agent
               agent: {
-                name: typeof propertyData.agent === 'object' ? propertyData.agent?.name || "Contact Agent" : "Contact Agent",
-                image: (typeof propertyData.agent === 'object' && propertyData.agent?.image && propertyData.agent?.image.trim() !== "") 
-                  ? propertyData.agent.image 
-                  : "/house1.jpeg",
-                contact: typeof propertyData.agent === 'object' ? propertyData.agent?.contact || "info@ingwe.co.za" : "info@ingwe.co.za",
+                name: agent_details?.full_name || propertyData.meta?.agent?.full_name || "Contact Agent",
+                image: agent_details?.image_url || "",
+                contact: agent_details?.email || agent_details?.cell_number || propertyData.meta?.agent?.email || "info@ingwe.co.za",
+                email: agent_details?.email || propertyData.meta?.agent?.email || "info@ingwe.co.za",
               },
             });
             
@@ -152,17 +218,15 @@ export default function Page() {
                 location: matchingProperty.location || "Unknown Location",
                 locationString: matchingProperty.locationString || (typeof matchingProperty.location === 'string' && isNaN(Number(matchingProperty.location)) ? matchingProperty.location : "Unknown Location"),
                 price: matchingProperty.price,
-                images: matchingProperty.image ? [matchingProperty.image] : ["/house1.jpeg"],
+                images: matchingProperty.image && !matchingProperty.image.includes('/house1.jpeg') ? [matchingProperty.image] : [],
                 beds: matchingProperty.beds || 0,
                 baths: matchingProperty.baths || 0,
                 size: matchingProperty.size || 0,
                 description: matchingProperty.description || "No description available.",
-                features: [
-                  matchingProperty.propertyType || "Unknown property type"
-                ],
+                features: [matchingProperty.propertyType || "Unknown property type"],
                 agent: {
                   name: "Contact Agent",
-                  image: "/house1.jpeg",
+                  image: "", // No fallback image for agent
                   contact: "info@ingwe.co.za",
                 },
               });
@@ -227,42 +291,39 @@ export default function Page() {
   }
 
   return (
-    <main className="max-w-screen-xl mx-auto p-4 text-left">
+    <main className="max-w-screen-xl mx-auto p-4 text-left mb-20">
       {usingFallback && !property.description && (
         <div className="mb-4 p-3 bg-yellow-100 border border-yellow-300 rounded text-yellow-700">
           <p>Using limited property data. Some details may not be available.</p>
         </div>
       )}
     
-      {/* Header */}
-      <PropertyHeader 
-        title={property.title} 
-        location={property.locationString || 
-          (typeof property.location === 'string' && isNaN(Number(property.location)) ? 
-            property.location : "Unknown Location")} 
-      />
+      {/* Gallery - only show if we have real images */}
+      {property.images && property.images.length > 0 && (
+        <PropertyGallery 
+          images={property.images} 
+          title={property.title} 
+        />
+      )}
 
-      {/* Gallery */}
-      <PropertyGallery 
-        images={property.images && property.images.length > 0 
-          ? property.images 
-          : ["/house1.jpeg"]} // Fallback image
-        title={property.title} 
-      />
-
-      {/* Quick Stats */}
-      <PropertyQuickStats beds={property.beds} baths={property.baths} size={property.size} />
-
-      {/* Description */}
-      <PropertyDescription description={property.description} />
-
-      {/* Features */}
-      <PropertyFeatures features={property.features} />
-
-      {/* Side Panel */}
+      {/* Main Content Layout: Property Info (2/3) + Agent Box (1/3) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
-          {/* Other main content could go here */}
+          {/* Header */}
+          <PropertyHeader 
+            title={property.title} 
+            location={property.locationString || 
+              (typeof property.location === 'string' && isNaN(Number(property.location)) ? 
+                property.location : "Unknown Location")} 
+          />
+          {/* Quick Stats */}
+          <PropertyQuickStats beds={property.beds} baths={property.baths} size={property.size} />
+
+          {/* Description */}
+          <PropertyDescription description={property.description} />
+
+          {/* Features */}
+          <PropertyFeatures features={property.features} />
         </div>
         <div>
           <PropertySidePanel price={property.price} agent={property.agent} />
@@ -276,7 +337,11 @@ export default function Page() {
         />
       )}
 
-      {/* Similar listings section removed for now */}
+      {/* Other Listings Section */}
+      <OtherListings 
+        current_property_id={property.id?.toString()} 
+        location={property.location}
+      />
     </main>
   );
 }

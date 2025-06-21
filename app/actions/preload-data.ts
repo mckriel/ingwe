@@ -1,7 +1,7 @@
 "use server";
 
 import { fetch_with_auth } from "../../services/api/auth";
-import { fetch_property_types } from "./property-types";
+import { get_property_types } from "./property-types";
 
 // Simple location cache with minimal functionality
 const locationCache: Record<string, any> = {};
@@ -145,7 +145,7 @@ export async function get_locations_for_properties(properties: any[]) {
  */
 export async function preloadPropertyTypes(): Promise<void> {
   try {
-    await fetch_property_types();
+    await get_property_types();
   } catch (error) {
     // Silent fail
   }

@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { XMarkIcon } from "@heroicons/react/24/outline";
-import { getLocationSuggestions, prefetchCommonLocationTerms } from "@/app/actions/location-handler";
-import { get_safe_property_types, PropertyType, get_fallback_property_types } from "@/app/actions/property-types";
+import { get_location_suggestions } from "@/app/actions/location-actions";
+import { get_property_types, PropertyType } from "@/app/actions/property-types";
 
 interface propertyFilterBarProps {
   onSearch: () => void;
@@ -67,20 +67,10 @@ export default function PropertyFilterBar({ onSearch, onFilterChange = () => {} 
   useEffect(() => {
     const fetchPropertyTypes = async () => {
       try {
-        // First try to get from API/cache
-        const types = await get_safe_property_types();
+        const types = await get_property_types();
         setPropertyTypes(types);
       } catch (error) {
         console.error("Error fetching property types:", error);
-
-        // If that fails, use fallback types
-        try {
-          const fallbackTypes = await get_fallback_property_types();
-          setPropertyTypes(fallbackTypes);
-        } catch (fallbackError) {
-          console.error("Error fetching fallback property types:", fallbackError);
-          // Set to empty array as last resort (UI will handle this gracefully)
-        }
       }
     };
 
@@ -99,7 +89,7 @@ export default function PropertyFilterBar({ onSearch, onFilterChange = () => {} 
       setIsLoading(true);
       try {
         // Use client-side caching logic
-        const results = await getLocationSuggestions(locationInput);
+        const results = await get_location_suggestions(locationInput);
         if (isMounted) {
           setSuggestions(results);
           setShowSuggestions(true);
@@ -275,7 +265,6 @@ export default function PropertyFilterBar({ onSearch, onFilterChange = () => {} 
                 onChange={(e) => setLocationInput(e.target.value)}
                 onFocus={() => {
                   // Prefetch common locations when the user focuses the input
-                  prefetchCommonLocationTerms();
                   // Show suggestions if we have a valid query
                   if (locationInput.trim().length >= 2) {
                     setShowSuggestions(true);

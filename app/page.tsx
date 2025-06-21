@@ -1,6 +1,5 @@
 'use client';
 import { useState } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
 
 export default function Page() {
@@ -296,7 +295,7 @@ export default function Page() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {[1, 2, 3].map((testimonial) => (
                             <div key={testimonial} className="bg-white p-8 rounded-xl shadow-lg">
-                                <div className="text-[#B8C332] text-4xl mb-4">"</div>
+                                <div className="text-[#B8C332] text-4xl mb-4">&ldquo;</div>
                                 <p className="text-gray-600 mb-6">
                                     Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
                                 </p>

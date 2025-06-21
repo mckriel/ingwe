@@ -361,7 +361,7 @@ export default function Page() {
                     {/* Section Header */}
                     <div className="text-center mb-12">
                         <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-8">
-                            We're Hiring!
+                            We&apos;re Hiring!
                         </h2>
                     </div>
                     

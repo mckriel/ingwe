@@ -7,12 +7,17 @@ interface PropertyFeaturesProps {
 export default function PropertyFeatures({ features }: PropertyFeaturesProps) {
     return (
       <section className="mb-4">
-        <h3 className="font-semibold mb-2">Features</h3>
-        <div className="flex flex-wrap gap-2">
+        <h2 className="text-xl font-semibold text-[#4B4B4B] mb-3">Features</h2>
+        <div className="grid grid-cols-2 gap-2">
           {features.map((feature) => (
             <span
               key={feature}
-              className="px-2 py-1 bg-green-100 text-green-700 rounded text-sm"
+              className="px-3 py-2 rounded text-base border-2"
+              style={{ 
+                backgroundColor: '#FFFFFF', 
+                color: '#D1DA68',
+                borderColor: '#D1DA68'
+              }}
             >
               {feature}
             </span>

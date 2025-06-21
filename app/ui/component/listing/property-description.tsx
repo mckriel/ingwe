@@ -17,7 +17,7 @@ export default function PropertyDescription({ description }: PropertyDescription
     
     return (
       <section className="mb-8">
-        <h2 className="text-xl font-semibold text-[#4B4B4B] mb-3">Description</h2>
+        <h2 className="text-xl font-semibold text-[#4B4B4B] mb-3">About the property</h2>
         <div className="text-gray-700">
           {formattedDescription}
         </div>

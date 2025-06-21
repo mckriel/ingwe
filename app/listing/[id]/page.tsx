@@ -267,9 +267,10 @@ export default function Page() {
   // If not yet client-side, return a simple loading state to avoid hydration errors
   if (!isClient) {
     return (
-      <div className="max-w-screen-xl mx-auto p-4 min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-transparent pt-64">
         <div className="text-center">
-          <p className="text-gray-500">Loading...</p>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-8 border-[#B8C332] mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
         </div>
       </div>
     );
@@ -278,14 +279,10 @@ export default function Page() {
   // Now we're client-side, so we can render more complex loading state
   if (loading) {
     return (
-      <div className="max-w-screen-xl mx-auto p-4 min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-transparent pt-64">
         <div className="text-center">
-          <div className="animate-pulse flex flex-col items-center">
-            <div className="h-8 w-64 bg-gray-200 rounded mb-4"></div>
-            <div className="h-64 w-full max-w-lg bg-gray-200 rounded mb-4"></div>
-            <div className="h-4 w-48 bg-gray-200 rounded"></div>
-          </div>
-          <p className="mt-4 text-gray-500">Loading property details...</p>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-8 border-[#B8C332] mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading property details...</p>
         </div>
       </div>
     );

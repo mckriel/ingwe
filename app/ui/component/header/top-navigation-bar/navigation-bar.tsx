@@ -54,9 +54,9 @@ export default function NavigationBar({ property }: NavigationBarProps) {
         <NavItem label="Rent" href="/rent" isActive={pathname === "/rent" || !!is_rental} />
         <NavItem label="Selling" href="/sell" isActive={pathname === "/sell"} />
         <NavItem label="Calculators" href="/calculator" isActive={pathname.startsWith("/calculator")} />
+        <NavItem label="Company" href="/about" isActive={pathname.startsWith("/about")} />
         <NavItem label="Agents" href="/agents" isActive={pathname.startsWith("/agents")} />
         <NavItem label="Articles" href="/articles" isActive={pathname.startsWith("/articles")} />
-        <NavItem label="About" href="/about" isActive={pathname.startsWith("/about")} />
       </div>
 
       {/* Mobile Hamburger Button */}
@@ -130,6 +130,12 @@ export default function NavigationBar({ property }: NavigationBarProps) {
             onClick={closeMenu}
           />
           <NavItem
+            label="Company"
+            href="/about"
+            isActive={pathname.startsWith("/about")}
+            onClick={closeMenu}
+          />
+          <NavItem
             label="Agents"
             href="/agents"
             isActive={pathname.startsWith("/agents")}
@@ -139,12 +145,6 @@ export default function NavigationBar({ property }: NavigationBarProps) {
             label="Articles"
             href="/articles"
             isActive={pathname.startsWith("/articles")}
-            onClick={closeMenu}
-          />
-          <NavItem
-            label="About"
-            href="/about"
-            isActive={pathname.startsWith("/about")}
             onClick={closeMenu}
           />
         </div>

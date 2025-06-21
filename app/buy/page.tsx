@@ -22,6 +22,7 @@ interface Property {
 export default function Page() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
 
   // Set page title
   useEffect(() => {
@@ -40,6 +41,7 @@ export default function Page() {
     min_price: undefined as number | undefined,
     max_price: undefined as number | undefined,
     bedrooms: undefined as number | undefined,
+    bathrooms: undefined as number | undefined,
     listing_type: "For Sale" as string | undefined,
     site: 217 as number | undefined, // Default to filtering for Ingwe properties by site ID
   });
@@ -75,8 +77,9 @@ export default function Page() {
 
   const handleSearch = async () => {
     setLoading(true);
-    // Reset pagination when doing a new search
+    // Reset pagination and clear properties when doing a new search
     setOffset(0);
+    setProperties([]);
 
     // IMPORTANT: Double-check the location parameter
     // This ensures we're properly filtering by location
@@ -87,7 +90,8 @@ export default function Page() {
     }
 
     // Log the search parameters for debugging
-    console.log("BuyPage - Executing search with params:", {
+    console.log("🏠 BuyPage - Received search params from filter:", JSON.stringify(searchParams, null, 2));
+    console.log("🏠 BuyPage - Executing search with params:", {
       location: searchParams.location || 'undefined',
       property_type: searchParams.property_type || 'undefined',
       min_price: searchParams.min_price || 'undefined',
@@ -111,6 +115,7 @@ export default function Page() {
         min_price: searchParams.min_price,
         max_price: searchParams.max_price,
         bedrooms: searchParams.bedrooms,
+        bathrooms: searchParams.bathrooms,
         site: searchParams.site || 217, // Use the site filter from state, default to 217
         listing_type: searchParams.listing_type || "For Sale", // Use provided listing_type or default to "For Sale"
       };
@@ -150,9 +155,9 @@ export default function Page() {
 
   // Function to load more properties when user scrolls to bottom or clicks "Load More"
   const loadMoreProperties = async () => {
-    if (loading || !hasMore) return;
+    if (loading || loadingMore || !hasMore) return;
 
-    setLoading(true);
+    setLoadingMore(true);
 
     try {
       // Use same parameters as the initial search, but with updated offset
@@ -168,6 +173,7 @@ export default function Page() {
         min_price: searchParams.min_price,
         max_price: searchParams.max_price,
         bedrooms: searchParams.bedrooms,
+        bathrooms: searchParams.bathrooms,
         site: searchParams.site || 217,
         listing_type: searchParams.listing_type || "For Sale",
       };
@@ -190,22 +196,25 @@ export default function Page() {
       console.error("BuyPage - Error loading more properties:", error);
       setHasMore(false);
     } finally {
-      setLoading(false);
+      setLoadingMore(false);
     }
   };
 
   return (
     <main className="min-h-screen flex flex-col items-center pt-8 w-full">
-      <h1 className="text-3xl font-bold mb-6 text-center">Property for Sale</h1>
+      <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-8 text-center">Property for Sale</h1>
       <PropertyFilterBar
         onSearch={handleSearch}
         onFilterChange={handleFilterChange}
       />
       
-      {loading && properties.length === 0 ? (
-        <div className="py-20">
-          <div className="animate-pulse text-center">
-            <p className="text-gray-500">Loading properties...</p>
+      <div className="mt-8"></div>
+      
+      {loading ? (
+        <div className="min-h-screen bg-transparent pt-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-8 border-[#B8C332] mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading properties...</p>
           </div>
         </div>
       ) : (
@@ -215,7 +224,7 @@ export default function Page() {
             listingType="buy"
             onLoadMore={loadMoreProperties}
             hasMore={hasMore}
-            loading={loading}
+            loading={loadingMore}
           />
         </div>
       )}

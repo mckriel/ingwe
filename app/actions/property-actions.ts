@@ -56,11 +56,14 @@ export async function get_residential_listings(params: {
 	min_price?: number;
 	max_price?: number;
 	bedrooms?: number;
+	bathrooms?: number;
 	company?: string;
 	site?: number;
 	branch?: number;
 	listing_type?: string;
 } = {}) {
+	console.log("🔍 get_residential_listings called with params:", JSON.stringify(params, null, 2));
+	
 	const queryParams = new URLSearchParams();
 	
 	if (params.limit) queryParams.append("limit", params.limit.toString());
@@ -73,9 +76,19 @@ export async function get_residential_listings(params: {
 		  : params.location;
 		queryParams.append("location", locationId.toString());
 	}
-	if (params.property_type) queryParams.append("property_type", params.property_type);
-	if (params.min_price) queryParams.append("min_price", params.min_price.toString());
-	if (params.max_price) queryParams.append("max_price", params.max_price.toString());
+	if (params.property_type) {
+		console.log("🏠 Adding property_type to query:", params.property_type);
+		queryParams.append("property_type", params.property_type);
+	}
+	// Note: min_price and max_price are not supported by the API, we'll filter client-side
+	// if (params.min_price) {
+	//	 console.log("💰 Adding min_price to query:", params.min_price);
+	//	 queryParams.append("min_price", params.min_price.toString());
+	// }
+	// if (params.max_price) {
+	//	 console.log("💰 Adding max_price to query:", params.max_price);
+	//	 queryParams.append("max_price", params.max_price.toString());
+	// }
 	if (params.bedrooms) queryParams.append("bedrooms", params.bedrooms.toString());
 	if (params.company) queryParams.append("company", params.company);
 	if (params.site) queryParams.append("site", params.site.toString());
@@ -88,15 +101,128 @@ export async function get_residential_listings(params: {
 	const additionalParams = queryString ? `&${queryString}&${statusFilter}` : `?${statusFilter}`;
 	const endpoint = `/mashup/api/v1/residential/?meta_fields=${metaFields}${additionalParams}`;
 	
+	console.log("🌐 API Endpoint being called:", endpoint);
+	console.log("📝 Query string:", queryString);
+	
 	const response = await fetch_with_auth(endpoint, {
-		next: { revalidate: 180 } // Cache for 3 minutes
+		cache: 'no-store' // Disable caching to ensure fresh results for each search
 	});
 	
 	if (!response.ok) {
+		console.error("❌ API call failed:", response.status, response.statusText);
 		throw new Error(`Failed to fetch listings: ${response.status} ${response.statusText}`);
 	}
 	
 	const data = await response.json();
+	console.log("📊 API Response - Total count:", data.count);
+	console.log("📊 API Response - Results length:", data.results?.length || 0);
+	
+	// Log the first few property types to see what's in the data
+	if (data.results && data.results.length > 0) {
+		console.log("📊 Sample property types from API:");
+		data.results.slice(0, 5).forEach((property: any, index: number) => {
+			console.log(`  ${index + 1}. Property ID ${property.id}: property_type="${property.property_type}", propertyType="${property.propertyType}"`);
+		});
+	}
+
+	// Client-side filtering since API doesn't support all filters properly
+	let needsFiltering = params.min_price || params.max_price || params.bedrooms || params.bathrooms || params.property_type;
+	
+	if (needsFiltering) {
+		console.log("🔍 =================================");
+		console.log("🔍 APPLYING CLIENT-SIDE FILTERING");
+		console.log("🔍 Before filtering:", data.results.length, "properties");
+		console.log("🔍 Filter params:", { 
+			min_price: params.min_price, 
+			max_price: params.max_price, 
+			bedrooms: params.bedrooms, 
+			bathrooms: params.bathrooms,
+			property_type: params.property_type 
+		});
+		console.log("🔍 =================================");
+		
+		data.results = data.results.filter((property: any) => {
+			// Price filtering
+			if (params.min_price || params.max_price) {
+				let propertyPrice = 0;
+				if (property.price) {
+					// Parse as float to handle decimal places correctly, then convert to integer
+					propertyPrice = Math.floor(parseFloat(property.price.toString())) || 0;
+				}
+				
+				// Apply min price filter
+				if (params.min_price && propertyPrice < params.min_price) {
+					console.log("💰 Filtered out (below min):", property.price, "< R" + params.min_price);
+					return false;
+				}
+				
+				// Apply max price filter
+				if (params.max_price && propertyPrice > params.max_price) {
+					console.log("💰 Filtered out (above max):", property.price, "> R" + params.max_price);
+					return false;
+				}
+			}
+			
+			// Bedroom filtering
+			if (params.bedrooms) {
+				let propertyBedrooms = 0;
+				if (property.bedrooms) {
+					propertyBedrooms = parseInt(property.bedrooms.toString()) || 0;
+				}
+				
+				console.log("🛏️ Checking bedroom filter - Property:", propertyBedrooms, "beds, Required:", params.bedrooms, "beds");
+				
+				if (propertyBedrooms < params.bedrooms) {
+					console.log("🛏️ ❌ Filtered out (insufficient bedrooms):", propertyBedrooms, "< " + params.bedrooms);
+					return false;
+				} else {
+					console.log("🛏️ ✅ Property passed bedroom filter:", propertyBedrooms, ">= " + params.bedrooms);
+				}
+			}
+			
+			// Bathroom filtering
+			if (params.bathrooms) {
+				let propertyBathrooms = 0;
+				if (property.bathrooms) {
+					propertyBathrooms = parseInt(property.bathrooms.toString()) || 0;
+				}
+				
+				if (propertyBathrooms < params.bathrooms) {
+					console.log("🛁 Filtered out (insufficient bathrooms):", propertyBathrooms, "< " + params.bathrooms);
+					return false;
+				}
+			}
+			
+			// Property type filtering
+			if (params.property_type) {
+				let propertyType = property.property_type || property.propertyType || "";
+				
+				console.log("🏠 Checking property type filter - Property:", propertyType, "Required:", params.property_type);
+				
+				// Case-insensitive comparison and handle variations
+				const normalizedPropertyType = propertyType.toLowerCase().trim();
+				const normalizedRequiredType = params.property_type.toLowerCase().trim();
+				
+				if (normalizedPropertyType !== normalizedRequiredType) {
+					console.log("🏠 ❌ Filtered out (wrong property type):", propertyType, "!= " + params.property_type);
+					return false;
+				} else {
+					console.log("🏠 ✅ Property passed type filter:", propertyType, "== " + params.property_type);
+				}
+			}
+			
+			console.log("✅ Kept property:", { 
+				price: property.price, 
+				bedrooms: property.bedrooms, 
+				bathrooms: property.bathrooms, 
+				property_type: property.property_type || property.propertyType 
+			});
+			return true;
+		});
+		
+		console.log("🔍 After filtering:", data.results.length, "properties");
+		data.count = data.results.length;
+	}
 
 	if (params.location) {
 		const targetLocationId = typeof params.location === 'string' ? params.location : String(params.location);
@@ -257,6 +383,7 @@ export async function get_formatted_properties(params: {
 	min_price?: number;
 	max_price?: number;
 	bedrooms?: number;
+	bathrooms?: number;
 	include_full_description?: boolean;
 	company?: string;
 	site?: number;
@@ -276,6 +403,7 @@ export async function get_formatted_properties(params: {
 			min_price: params.min_price,
 			max_price: params.max_price,
 			bedrooms: params.bedrooms,
+			bathrooms: params.bathrooms,
 			company: params.company,
 			site: params.site,
 			branch: params.branch,
@@ -292,6 +420,7 @@ export async function get_formatted_properties(params: {
 				min_price: params.min_price,
 				max_price: params.max_price,
 				bedrooms: params.bedrooms,
+				bathrooms: params.bathrooms,
 				company: params.company,
 				site: params.site,
 				branch: params.branch,
@@ -318,6 +447,7 @@ export async function get_formatted_properties(params: {
 						min_price: params.min_price,
 						max_price: params.max_price,
 						bedrooms: params.bedrooms,
+						bathrooms: params.bathrooms,
 						company: params.company,
 						site: params.site,
 						branch: params.branch,
@@ -335,6 +465,7 @@ export async function get_formatted_properties(params: {
 			min_price: params.min_price,
 			max_price: params.max_price,
 			bedrooms: params.bedrooms,
+			bathrooms: params.bathrooms,
 			company: params.company,
 			site: params.site,
 			branch: params.branch,
@@ -427,4 +558,80 @@ export async function get_formatted_properties(params: {
 	
 	const propertiesWithLocations = await get_locations_for_properties(formattedProperties);
 	return propertiesWithLocations;
+}
+
+
+export async function get_agents(params: {
+	limit?: number;
+	offset?: number;
+	order_by?: string;
+	site?: number;
+} = {}) {
+	const queryParams = new URLSearchParams();
+	
+	if (params.limit) queryParams.append("limit", params.limit.toString());
+	if (params.offset) queryParams.append("offset", params.offset.toString());
+	if (params.order_by) queryParams.append("order_by", params.order_by);
+	if (params.site) queryParams.append("site", params.site.toString());
+	
+	const queryString = queryParams.toString();
+	const endpoint = `/users/api/v1/agents/${queryString ? `?${queryString}` : ''}`;
+	
+	try {
+		const response = await fetch_with_auth(endpoint, {
+			next: { revalidate: 600 } // Cache for 10 minutes (agents change less frequently)
+		});
+		
+		if (!response.ok) {
+			throw new Error(`Failed to fetch agents: ${response.status} ${response.statusText}`);
+		}
+		
+		const data = await response.json();
+		
+		// Format the agents data and filter for those with active listings
+		const formatted_agents = await Promise.all(data.results.map(async (agent: any) => {
+			let image_url = null;
+			
+			// Try to get agent image if available
+			if (agent.image && typeof agent.image === 'number') {
+				image_url = await get_image_url(agent.image);
+			}
+			
+			// Count agent's active listings for display
+			let listings_count = 0;
+			try {
+				const listings_response = await fetch_with_auth(
+					`/mashup/api/v1/residential/?agent=${agent.id}&status__in=Active&limit=1`
+				);
+				if (listings_response.ok) {
+					const listings_data = await listings_response.json();
+					listings_count = listings_data.count || 0;
+				}
+			} catch (error) {
+				// Silently fail for listings count
+			}
+			
+			return {
+				id: agent.id,
+				name: `${agent.first_name || ''} ${agent.last_name || ''}`.trim() || agent.username || 'Agent',
+				image: image_url || null,
+				listings_count: listings_count,
+				email: agent.email,
+				phone: agent.phone_number,
+				branch: agent.branch
+			};
+		}));
+		
+		// Filter to only include agents with active listings
+		const agents_with_listings = formatted_agents.filter(agent => agent.listings_count > 0);
+		
+		return {
+			...data,
+			results: agents_with_listings,
+			count: agents_with_listings.length
+		};
+	} catch (error) {
+		console.error('Error fetching agents:', error);
+		throw error;
+	}
 }

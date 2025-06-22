@@ -19,7 +19,7 @@ async function get_image_url(image_id: number): Promise<string | null> {
 }
 
 export async function get_agent_details(agent_id: number) {
-	const endpoint = `/users/api/v1/agents/${agent_id}/`;
+	const endpoint = `/users/api/v1/agents/${agent_id}/?meta_fields=image,profile_image,avatar`;
 	
 	try {
 		const response = await fetch_with_auth(endpoint, {
@@ -32,12 +32,38 @@ export async function get_agent_details(agent_id: number) {
 		
 		const agent_data = await response.json();
 		
-		// Fetch agent image if available (currently not working, using placeholder)
-		if (agent_data.image && typeof agent_data.image === 'number') {
-			const image_url = await get_image_url(agent_data.image);
-			if (image_url) {
-				agent_data.image_url = image_url;
+		
+		// Try to get agent image from various sources
+		let image_url = null;
+		
+		// Check meta fields first
+		if (agent_data.meta?.image) {
+			if (typeof agent_data.meta.image === 'string') {
+				image_url = agent_data.meta.image;
+			} else if (typeof agent_data.meta.image === 'object' && agent_data.meta.image.file) {
+				image_url = agent_data.meta.image.file;
 			}
+		}
+		
+		// Fallback to direct image field
+		if (!image_url && agent_data.image) {
+			if (typeof agent_data.image === 'string') {
+				image_url = agent_data.image;
+			} else if (typeof agent_data.image === 'number') {
+				// Try different approaches for agent images
+				// First try the media API
+				image_url = await get_image_url(agent_data.image);
+				
+				// If that fails, agent images are not accessible through current API endpoints
+				if (!image_url) {
+					// Will be updated once support provides the correct endpoint
+					image_url = null;
+				}
+			}
+		}
+		
+		if (image_url) {
+			agent_data.image_url = image_url;
 		}
 		
 		return agent_data;
@@ -61,6 +87,7 @@ export async function get_residential_listings(params: {
 	site?: number;
 	branch?: number;
 	listing_type?: string;
+	agent?: number;
 } = {}) {
 	console.log("🔍 get_residential_listings called with params:", JSON.stringify(params, null, 2));
 	
@@ -94,6 +121,10 @@ export async function get_residential_listings(params: {
 	if (params.site) queryParams.append("site", params.site.toString());
 	if (params.branch) queryParams.append("branch", params.branch.toString());
 	if (params.listing_type) queryParams.append("listing_type", params.listing_type);
+	if (params.agent) {
+		console.log("👤 Adding agent filter to query:", params.agent);
+		queryParams.append("agent", params.agent.toString());
+	}
 	
 	const queryString = queryParams.toString();
 	const metaFields = "listing_images,suburb,agent,branch";
@@ -126,7 +157,7 @@ export async function get_residential_listings(params: {
 	}
 
 	// Client-side filtering since API doesn't support all filters properly
-	let needsFiltering = params.min_price || params.max_price || params.bedrooms || params.bathrooms || params.property_type;
+	const needsFiltering = params.min_price || params.max_price || params.bedrooms || params.bathrooms || params.property_type;
 	
 	if (needsFiltering) {
 		console.log("🔍 =================================");
@@ -195,7 +226,7 @@ export async function get_residential_listings(params: {
 			
 			// Property type filtering
 			if (params.property_type) {
-				let propertyType = property.property_type || property.propertyType || "";
+				const propertyType = property.property_type || property.propertyType || "";
 				
 				console.log("🏠 Checking property type filter - Property:", propertyType, "Required:", params.property_type);
 				
@@ -389,6 +420,7 @@ export async function get_formatted_properties(params: {
 	site?: number;
 	branch?: number;
 	listing_type?: string;
+	agent?: number;
 } = {}) {
 	const limit = params.limit || 12;
 	let data;
@@ -407,7 +439,8 @@ export async function get_formatted_properties(params: {
 			company: params.company,
 			site: params.site,
 			branch: params.branch,
-			listing_type: params.listing_type
+			listing_type: params.listing_type,
+			agent: params.agent
 		});
 		
 		if (data.results.length === 0 && params.location_display) {
@@ -424,7 +457,8 @@ export async function get_formatted_properties(params: {
 				company: params.company,
 				site: params.site,
 				branch: params.branch,
-				listing_type: params.listing_type
+				listing_type: params.listing_type,
+				agent: params.agent
 			});
 			
 			if (data.results.length === 0) {
@@ -451,7 +485,8 @@ export async function get_formatted_properties(params: {
 						company: params.company,
 						site: params.site,
 						branch: params.branch,
-						listing_type: params.listing_type
+						listing_type: params.listing_type,
+						agent: params.agent
 					});
 				}
 			}
@@ -469,7 +504,8 @@ export async function get_formatted_properties(params: {
 			company: params.company,
 			site: params.site,
 			branch: params.branch,
-			listing_type: params.listing_type
+			listing_type: params.listing_type,
+			agent: params.agent
 		});
 	}
 	
@@ -549,7 +585,7 @@ export async function get_formatted_properties(params: {
 				: property.description 
 					? (property.description.length > 150 ? property.description.substring(0, 150) + "..." : property.description)
 					: "",
-			propertyType: property.property_type || "",
+			propertyType: property.listing_type || property.property_type || "", // Include listing_type for rental detection
 			propertyId: property.residential || property.id,
 			location: property.location,
 			site: property.site
@@ -575,7 +611,8 @@ export async function get_agents(params: {
 	if (params.site) queryParams.append("site", params.site.toString());
 	
 	const queryString = queryParams.toString();
-	const endpoint = `/users/api/v1/agents/${queryString ? `?${queryString}` : ''}`;
+	const metaFields = "image,profile_image,avatar";
+	const endpoint = `/users/api/v1/agents/${queryString ? `?${queryString}&meta_fields=${metaFields}` : `?meta_fields=${metaFields}`}`;
 	
 	try {
 		const response = await fetch_with_auth(endpoint, {

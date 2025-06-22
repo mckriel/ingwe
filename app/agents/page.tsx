@@ -126,7 +126,7 @@ export default function AgentsPage() {
                         {agents.map((agent) => (
                             <Link 
                                 key={agent.id} 
-                                href={`/agents/${agent.id}`}
+                                href={`/agents/${agent.id}?listings=${agent.listings_count}`}
                                 className="group block"
                             >
                                 <div className="bg-white">

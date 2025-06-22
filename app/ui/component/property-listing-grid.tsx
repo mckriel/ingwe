@@ -23,7 +23,7 @@ interface Property {
 interface PropertyListingGridProps {
   properties: Property[];
   title?: string; // Optional title for the grid
-  listingType?: "buy" | "rent"; // Indicates whether these are properties for sale or rent
+  listingType?: "buy" | "rent" | "mixed"; // Indicates whether these are properties for sale, rent, or mixed
   onLoadMore?: () => void; // Callback to load more properties
   hasMore?: boolean; // Indicates if there are more properties to load
   loading?: boolean; // Indicates if properties are currently loading
@@ -77,7 +77,7 @@ export default function PropertyListingGrid({
                   beds={property.beds}
                   baths={property.baths}
                   size={property.size}
-                  propertyType={listingType === "rent" ? "To Let" : "For Sale"}
+                  propertyType={property.propertyType || (listingType === "rent" ? "To Let" : listingType === "buy" ? "For Sale" : "")}
                   location={property.location}
                   locationString={property.locationString}
                   locationDetail={property.locationDetail}

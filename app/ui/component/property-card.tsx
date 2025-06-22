@@ -32,7 +32,7 @@ export default function PropertyCard({
   locationDetail,
 }: PropertyCardProps) {
   const propertyUrl = `/listing/${propertyId || id}`;
-  const isRental = price?.includes('per month') || price?.includes('p/m') || propertyType?.includes('Rental') || propertyType?.includes('To Let');
+  const isRental = propertyType === 'To Let';
   const hasValidImage = image && image.trim() !== "" && !image.includes('/house1.jpeg');
 
   if (!hasValidImage) {

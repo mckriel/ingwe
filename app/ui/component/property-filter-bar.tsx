@@ -22,6 +22,9 @@ interface propertyFilterBarProps {
     listing_type?: string;
     site?: number; // Added site ID for company filtering
   }) => void;
+  showNavigationTabs?: boolean; // Show Buying/Renting/Selling tabs (for home page)
+  searchType?: string; // Current search type (buying/renting/selling)
+  onSearchTypeChange?: (type: string) => void; // Handler for search type change
 }
 
 interface LocationSuggestion {
@@ -33,7 +36,13 @@ interface LocationSuggestion {
   full: any;
 }
 
-export default function PropertyFilterBar({ onSearch, onFilterChange = () => {} }: propertyFilterBarProps) {
+export default function PropertyFilterBar({ 
+  onSearch, 
+  onFilterChange = () => {}, 
+  showNavigationTabs = false,
+  searchType = 'buying',
+  onSearchTypeChange = () => {}
+}: propertyFilterBarProps) {
   // State for search inputs
   const [locationInput, setLocationInput] = useState("");
   const [locations, setLocations] = useState<{id: number, display: string, suburb?: string, area?: string, province?: string}[]>([]);
@@ -296,7 +305,37 @@ export default function PropertyFilterBar({ onSearch, onFilterChange = () => {} 
 
   return (
     <div className="w-full max-w-screen-xl mx-auto px-4 mb-8">
-      {/* Single rounded filter box */}
+      {/* Navigation Tabs Section - Only show on home page */}
+      {showNavigationTabs && (
+        <div className="bg-white px-6 py-3 mb-1">
+          <div className="flex justify-start">
+            <div className="flex items-center gap-6">
+              <button
+                onClick={() => onSearchTypeChange('buying')}
+                className={`px-6 py-2 transition-all ${
+                  searchType === 'buying' 
+                  ? 'text-black font-bold border-b-2 border-[#B8C332]' 
+                  : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Buying
+              </button>
+              <button
+                onClick={() => onSearchTypeChange('renting')}
+                className={`px-6 py-2 transition-all ${
+                  searchType === 'renting' 
+                  ? 'text-black font-bold border-b-2 border-[#B8C332]' 
+                  : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Renting
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Filter box */}
       <div className="bg-[#B8C332] border border-gray-200 rounded-2xl p-6 shadow-lg">
         
         {/* Location Search */}

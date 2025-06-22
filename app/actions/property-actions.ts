@@ -89,7 +89,6 @@ export async function get_residential_listings(params: {
 	listing_type?: string;
 	agent?: number;
 } = {}) {
-	console.log("🔍 get_residential_listings called with params:", JSON.stringify(params, null, 2));
 	
 	const queryParams = new URLSearchParams();
 	
@@ -104,7 +103,6 @@ export async function get_residential_listings(params: {
 		queryParams.append("location", locationId.toString());
 	}
 	if (params.property_type) {
-		console.log("🏠 Adding property_type to query:", params.property_type);
 		queryParams.append("property_type", params.property_type);
 	}
 	// Note: min_price and max_price are not supported by the API, we'll filter client-side
@@ -122,7 +120,6 @@ export async function get_residential_listings(params: {
 	if (params.branch) queryParams.append("branch", params.branch.toString());
 	if (params.listing_type) queryParams.append("listing_type", params.listing_type);
 	if (params.agent) {
-		console.log("👤 Adding agent filter to query:", params.agent);
 		queryParams.append("agent", params.agent.toString());
 	}
 	
@@ -132,45 +129,20 @@ export async function get_residential_listings(params: {
 	const additionalParams = queryString ? `&${queryString}&${statusFilter}` : `?${statusFilter}`;
 	const endpoint = `/mashup/api/v1/residential/?meta_fields=${metaFields}${additionalParams}`;
 	
-	console.log("🌐 API Endpoint being called:", endpoint);
-	console.log("📝 Query string:", queryString);
-	
 	const response = await fetch_with_auth(endpoint, {
 		cache: 'no-store' // Disable caching to ensure fresh results for each search
 	});
 	
 	if (!response.ok) {
-		console.error("❌ API call failed:", response.status, response.statusText);
 		throw new Error(`Failed to fetch listings: ${response.status} ${response.statusText}`);
 	}
 	
 	const data = await response.json();
-	console.log("📊 API Response - Total count:", data.count);
-	console.log("📊 API Response - Results length:", data.results?.length || 0);
-	
-	// Log the first few property types to see what's in the data
-	if (data.results && data.results.length > 0) {
-		console.log("📊 Sample property types from API:");
-		data.results.slice(0, 5).forEach((property: any, index: number) => {
-			console.log(`  ${index + 1}. Property ID ${property.id}: property_type="${property.property_type}", propertyType="${property.propertyType}"`);
-		});
-	}
 
 	// Client-side filtering since API doesn't support all filters properly
 	const needsFiltering = params.min_price || params.max_price || params.bedrooms || params.bathrooms || params.property_type;
 	
 	if (needsFiltering) {
-		console.log("🔍 =================================");
-		console.log("🔍 APPLYING CLIENT-SIDE FILTERING");
-		console.log("🔍 Before filtering:", data.results.length, "properties");
-		console.log("🔍 Filter params:", { 
-			min_price: params.min_price, 
-			max_price: params.max_price, 
-			bedrooms: params.bedrooms, 
-			bathrooms: params.bathrooms,
-			property_type: params.property_type 
-		});
-		console.log("🔍 =================================");
 		
 		data.results = data.results.filter((property: any) => {
 			// Price filtering
@@ -183,13 +155,11 @@ export async function get_residential_listings(params: {
 				
 				// Apply min price filter
 				if (params.min_price && propertyPrice < params.min_price) {
-					console.log("💰 Filtered out (below min):", property.price, "< R" + params.min_price);
 					return false;
 				}
 				
 				// Apply max price filter
 				if (params.max_price && propertyPrice > params.max_price) {
-					console.log("💰 Filtered out (above max):", property.price, "> R" + params.max_price);
 					return false;
 				}
 			}
@@ -201,13 +171,8 @@ export async function get_residential_listings(params: {
 					propertyBedrooms = parseInt(property.bedrooms.toString()) || 0;
 				}
 				
-				console.log("🛏️ Checking bedroom filter - Property:", propertyBedrooms, "beds, Required:", params.bedrooms, "beds");
-				
 				if (propertyBedrooms < params.bedrooms) {
-					console.log("🛏️ ❌ Filtered out (insufficient bedrooms):", propertyBedrooms, "< " + params.bedrooms);
 					return false;
-				} else {
-					console.log("🛏️ ✅ Property passed bedroom filter:", propertyBedrooms, ">= " + params.bedrooms);
 				}
 			}
 			
@@ -219,7 +184,6 @@ export async function get_residential_listings(params: {
 				}
 				
 				if (propertyBathrooms < params.bathrooms) {
-					console.log("🛁 Filtered out (insufficient bathrooms):", propertyBathrooms, "< " + params.bathrooms);
 					return false;
 				}
 			}
@@ -228,30 +192,18 @@ export async function get_residential_listings(params: {
 			if (params.property_type) {
 				const propertyType = property.property_type || property.propertyType || "";
 				
-				console.log("🏠 Checking property type filter - Property:", propertyType, "Required:", params.property_type);
-				
 				// Case-insensitive comparison and handle variations
 				const normalizedPropertyType = propertyType.toLowerCase().trim();
 				const normalizedRequiredType = params.property_type.toLowerCase().trim();
 				
 				if (normalizedPropertyType !== normalizedRequiredType) {
-					console.log("🏠 ❌ Filtered out (wrong property type):", propertyType, "!= " + params.property_type);
 					return false;
-				} else {
-					console.log("🏠 ✅ Property passed type filter:", propertyType, "== " + params.property_type);
 				}
 			}
 			
-			console.log("✅ Kept property:", { 
-				price: property.price, 
-				bedrooms: property.bedrooms, 
-				bathrooms: property.bathrooms, 
-				property_type: property.property_type || property.propertyType 
-			});
 			return true;
 		});
 		
-		console.log("🔍 After filtering:", data.results.length, "properties");
 		data.count = data.results.length;
 	}
 

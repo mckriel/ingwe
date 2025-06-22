@@ -25,6 +25,15 @@ interface propertyFilterBarProps {
   showNavigationTabs?: boolean; // Show Buying/Renting/Selling tabs (for home page)
   searchType?: string; // Current search type (buying/renting/selling)
   onSearchTypeChange?: (type: string) => void; // Handler for search type change
+  initialValues?: {
+    location?: string;
+    location_display?: string;
+    property_type?: string;
+    min_price?: number;
+    max_price?: number;
+    bedrooms?: number;
+    bathrooms?: number;
+  }; // Initial values to populate the form
 }
 
 interface LocationSuggestion {
@@ -41,7 +50,8 @@ export default function PropertyFilterBar({
   onFilterChange = () => {}, 
   showNavigationTabs = false,
   searchType = 'buying',
-  onSearchTypeChange = () => {}
+  onSearchTypeChange = () => {},
+  initialValues = {}
 }: propertyFilterBarProps) {
   // State for search inputs
   const [locationInput, setLocationInput] = useState("");
@@ -81,7 +91,6 @@ export default function PropertyFilterBar({
   const extractPriceValue = (formattedPrice: string): number | undefined => {
     const digits = formattedPrice.replace(/\D/g, '');
     const result = digits ? parseInt(digits) : undefined;
-    console.log("💵 extractPriceValue:", formattedPrice, "→", result);
     return result;
   };
 
@@ -179,6 +188,29 @@ export default function PropertyFilterBar({
     };
   }, []);
   
+  // Initialize form values from initialValues prop
+  useEffect(() => {
+    
+    if (initialValues.location_display) {
+      setLocationInput(initialValues.location_display);
+    }
+    if (initialValues.property_type) {
+      setPropertyType(initialValues.property_type);
+    }
+    if (initialValues.min_price) {
+      setMinPrice(initialValues.min_price.toLocaleString());
+    }
+    if (initialValues.max_price) {
+      setMaxPrice(initialValues.max_price.toLocaleString());
+    }
+    if (initialValues.bedrooms) {
+      setBedrooms(initialValues.bedrooms.toString());
+    }
+    if (initialValues.bathrooms) {
+      setBathrooms(initialValues.bathrooms.toString());
+    }
+  }, [initialValues]);
+  
   // Don't automatically update on filter changes
   // Instead, prepare the filters for when the search button is clicked
   const getFilterParams = () => {
@@ -195,10 +227,6 @@ export default function PropertyFilterBar({
     minPriceNum = extractPriceValue(minPrice);
     maxPriceNum = extractPriceValue(maxPrice);
     
-    console.log("🔍 PropertyFilterBar getFilterParams - Price values:");
-    console.log("  Raw minPrice:", minPrice, "→ Extracted:", minPriceNum);
-    console.log("  Raw maxPrice:", maxPrice, "→ Extracted:", maxPriceNum);
-    
     if (bedrooms && bedrooms !== "Bed") {
       bedroomsNum = parseInt(bedrooms);
     }
@@ -211,17 +239,6 @@ export default function PropertyFilterBar({
     // Always filter for Ingwe properties (site ID 217)
     const siteFilter = 217;
     
-    // Enhanced debugging - always log the search parameters
-    console.log("🚀 PropertyFilterBar - Final search parameters:", {
-      locationId: locationId,
-      selectedLocations: locations,
-      property_type: propertyType !== "Property Type" ? propertyType : undefined,
-      min_price: minPriceNum,
-      max_price: maxPriceNum,
-      bedrooms: bedroomsNum,
-      bathrooms: bathroomsNum,
-      site: siteFilter
-    });
     
     return {
       location: locationId ? locationId.toString() : undefined,
@@ -250,10 +267,8 @@ export default function PropertyFilterBar({
       
       // Immediately update parent component with the new location 
       const locationId = suggestion.id;
-      console.log("Location selected:", locationId, suggestion.display);
       
       // Store both ID and text information for the location
-      // This allows us to search by name if ID doesn't find matches
       const filterParams = {
         location: locationId.toString(),
         location_display: suggestion.display,
@@ -262,7 +277,6 @@ export default function PropertyFilterBar({
         location_province: suggestion.province || ""
       };
       
-      // Update parent component's filters
       onFilterChange(filterParams);
     }
     setLocationInput("");
@@ -276,9 +290,6 @@ export default function PropertyFilterBar({
     
     // Determine what location ID to use now (if any)
     const newLocationId = newLocations.length > 0 ? newLocations[0].id : undefined;
-    
-    console.log("Location removed. New active location:", 
-      newLocationId ? `${newLocationId} (${newLocations[0].display})` : "None");
     
     // Update parent component with the new location state
     if (newLocationId) {
@@ -536,9 +547,6 @@ export default function PropertyFilterBar({
                   filterParams.location = locations[0].id.toString();
                 }
                 
-                if (locationInput.trim().length > 0) {
-                  console.log("Ignoring unpicked location text:", locationInput);
-                }
                 
                 onFilterChange(filterParams);
                 onSearch();

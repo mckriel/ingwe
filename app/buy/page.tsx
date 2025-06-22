@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import PropertyFilterBar from "@/app/ui/component/property-filter-bar";
 import PropertyListingGrid from "@/app/ui/component/property-listing-grid";
 import { get_formatted_properties } from "@/app/actions/property-actions";
@@ -19,18 +20,22 @@ interface Property {
     propertyType?: string;
 }
 
-export default function Page() {
+function BuyPageContent() {
+  const urlSearchParams = useSearchParams();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState<boolean>(false);
 
   // Set page title
   useEffect(() => {
     document.title = 'Buy Properties | Ingwe | The Property Company';
   }, []);
+  
   const [offset, setOffset] = useState<number>(0);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const PAGE_SIZE = 12; // Number of properties to load per page
+  
   const [searchParams, setSearchParams] = useState({
     location: "",
     location_display: undefined as string | undefined,
@@ -46,24 +51,71 @@ export default function Page() {
     site: 217 as number | undefined, // Default to filtering for Ingwe properties by site ID
   });
 
-  // Fetch properties when the page loads - only once
+  // Read URL parameters and update search state
   useEffect(() => {
-    // Only fetch data when the component first mounts
-    const initialLoad = async () => {
+    
+    const urlParams = {
+      location: urlSearchParams.get('location') || "",
+      location_display: urlSearchParams.get('location_display') || undefined,
+      location_suburb: urlSearchParams.get('location_suburb') || undefined,
+      location_area: urlSearchParams.get('location_area') || undefined,
+      location_province: urlSearchParams.get('location_province') || undefined,
+      property_type: urlSearchParams.get('property_type') || "",
+      min_price: urlSearchParams.get('min_price') ? parseInt(urlSearchParams.get('min_price')!) : undefined,
+      max_price: urlSearchParams.get('max_price') ? parseInt(urlSearchParams.get('max_price')!) : undefined,
+      bedrooms: urlSearchParams.get('bedrooms') ? parseInt(urlSearchParams.get('bedrooms')!) : undefined,
+      bathrooms: urlSearchParams.get('bathrooms') ? parseInt(urlSearchParams.get('bathrooms')!) : undefined,
+      listing_type: urlSearchParams.get('listing_type') || "For Sale",
+      site: urlSearchParams.get('site') ? parseInt(urlSearchParams.get('site')!) : 217,
+    };
+
+    // Update search params state
+    setSearchParams(urlParams);
+    
+    // Mark that we've processed the URL parameters
+    setInitialLoadComplete(true);
+  }, [urlSearchParams]);
+
+  // Fetch properties when URL parameters are loaded
+  useEffect(() => {
+    if (!initialLoadComplete) return; // Wait for URL params to be processed
+    
+    const performInitialSearch = async () => {
       setLoading(true);
+      setOffset(0);
+      setProperties([]);
+      
       try {
-        // Use the site parameter from searchParams
+        // Check if we have any filters from URL (excluding default values)
+        const hasFilters = searchParams.location || 
+                          searchParams.property_type || 
+                          searchParams.min_price || 
+                          searchParams.max_price || 
+                          searchParams.bedrooms || 
+                          searchParams.bathrooms;
+        
         const apiProperties = await get_formatted_properties({
-          limit: PAGE_SIZE, // Load a full page initially
-          offset: 0, // Start from the beginning
-          site: searchParams.site, // Use the site filter from state
-          listing_type: "For Sale", // Filter for properties for sale
+          limit: PAGE_SIZE,
+          offset: 0,
+          location: searchParams.location || undefined,
+          location_display: searchParams.location_display,
+          location_suburb: searchParams.location_suburb,
+          location_area: searchParams.location_area,
+          location_province: searchParams.location_province,
+          property_type: searchParams.property_type || undefined,
+          min_price: searchParams.min_price,
+          max_price: searchParams.max_price,
+          bedrooms: searchParams.bedrooms,
+          bathrooms: searchParams.bathrooms,
+          listing_type: searchParams.listing_type,
+          site: searchParams.site,
         });
+        
         setProperties(apiProperties);
-        setOffset(PAGE_SIZE); // Set the offset for the next page
-        setHasMore(apiProperties.length === PAGE_SIZE); // If we got less than a full page, there's no more data
+        setOffset(PAGE_SIZE);
+        setHasMore(apiProperties.length === PAGE_SIZE);
       } catch (error) {
-        // Fallback to empty array
+        console.error("Buy page: Initial search error:", error);
         setProperties([]);
         setHasMore(false);
       } finally {
@@ -71,9 +123,8 @@ export default function Page() {
       }
     };
 
-    initialLoad();
-    // Empty dependency array ensures this only runs once on mount
-  }, [PAGE_SIZE, searchParams.site]);
+    performInitialSearch();
+  }, [initialLoadComplete, searchParams]);
 
   const handleSearch = async () => {
     setLoading(true);
@@ -81,25 +132,6 @@ export default function Page() {
     setOffset(0);
     setProperties([]);
 
-    // IMPORTANT: Double-check the location parameter
-    // This ensures we're properly filtering by location
-    if (searchParams.location) {
-      console.log(`BuyPage - LOCATION FILTER IS SET: ${searchParams.location}`);
-    } else {
-      console.log(`BuyPage - NO LOCATION FILTER`);
-    }
-
-    // Log the search parameters for debugging
-    console.log("🏠 BuyPage - Received search params from filter:", JSON.stringify(searchParams, null, 2));
-    console.log("🏠 BuyPage - Executing search with params:", {
-      location: searchParams.location || 'undefined',
-      property_type: searchParams.property_type || 'undefined',
-      min_price: searchParams.min_price || 'undefined',
-      max_price: searchParams.max_price || 'undefined',
-      bedrooms: searchParams.bedrooms || 'undefined',
-      site: searchParams.site || 'undefined',
-      listing_type: "For Sale",
-    });
 
     try {
       // Created fixed parameters for the search
@@ -120,19 +152,12 @@ export default function Page() {
         listing_type: searchParams.listing_type || "For Sale", // Use provided listing_type or default to "For Sale"
       };
 
-      // Log the FINAL parameters we're sending
-      console.log("BuyPage - FINAL SEARCH PARAMETERS:", JSON.stringify(searchParameters));
-
-      // Make sure to pass ALL parameters, especially location
       const apiProperties = await get_formatted_properties(searchParameters);
-
-      console.log(`BuyPage - Search returned ${apiProperties.length} properties`);
       setProperties(apiProperties);
       setOffset(PAGE_SIZE); // Set offset for next page
       setHasMore(apiProperties.length === PAGE_SIZE); // If we got less than a full page, there's no more data
     } catch (error) {
       // If API fails, show empty state
-      console.error("BuyPage - Search error:", error);
       setProperties([]);
       setHasMore(false);
     } finally {
@@ -148,9 +173,6 @@ export default function Page() {
     };
 
     setSearchParams(updatedParams);
-
-    // Always log the updates for debugging
-    console.log("BuyPage - Updated search params:", updatedParams);
   };
 
   // Function to load more properties when user scrolls to bottom or clicks "Load More"
@@ -178,11 +200,7 @@ export default function Page() {
         listing_type: searchParams.listing_type || "For Sale",
       };
 
-      console.log(`BuyPage - Loading more properties with offset: ${offset}`);
-
       const moreProperties = await get_formatted_properties(searchParameters);
-
-      console.log(`BuyPage - Loaded ${moreProperties.length} more properties`);
 
       // Append the new properties to the existing list
       setProperties(prevProperties => [...prevProperties, ...moreProperties]);
@@ -193,7 +211,6 @@ export default function Page() {
       // Check if there are more properties to load
       setHasMore(moreProperties.length === PAGE_SIZE);
     } catch (error) {
-      console.error("BuyPage - Error loading more properties:", error);
       setHasMore(false);
     } finally {
       setLoadingMore(false);
@@ -206,6 +223,7 @@ export default function Page() {
       <PropertyFilterBar
         onSearch={handleSearch}
         onFilterChange={handleFilterChange}
+        initialValues={searchParams}
       />
       
       <div className="mt-8"></div>
@@ -229,5 +247,18 @@ export default function Page() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-transparent pt-64">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-8 border-[#B8C332] mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading...</p>
+      </div>
+    </div>}>
+      <BuyPageContent />
+    </Suspense>
   );
 }

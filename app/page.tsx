@@ -1,37 +1,43 @@
 'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import PropertyFilterBar from '@/app/ui/component/property-filter-bar';
+import AgentCarousel from '@/app/ui/component/agent-carousel';
 
 export default function Page() {
+    const router = useRouter();
     const [search_type, set_search_type] = useState('buying');
     const [filters, setFilters] = useState({});
 
     const handleSearch = () => {
+        
         // Determine the listing type based on the selected search type
         const listing_type = search_type === 'buying' ? 'For Sale' : search_type === 'renting' ? 'To Let' : '';
         
         // Create search URL with filters
         const searchParams = new URLSearchParams();
         
-        // Add filters to search params
+        // Add filters to search params (only if they have values)
         Object.entries(filters).forEach(([key, value]) => {
-            if (value) {
+            if (value && value !== '' && value !== null && value !== undefined) {
                 searchParams.append(key, value.toString());
             }
         });
         
-        // Add listing type based on selected tab
+        // Always add listing type and site filter
         if (listing_type) {
             searchParams.append('listing_type', listing_type);
         }
         
-        // Add site filter for Ingwe properties
         searchParams.append('site', '217');
         
-        // Navigate to appropriate page based on search type
+        // Determine target page based on search type
         const targetPage = search_type === 'buying' ? '/buy' : search_type === 'renting' ? '/rent' : '/buy';
-        window.location.href = `${targetPage}?${searchParams.toString()}`;
+        const fullUrl = `${targetPage}?${searchParams.toString()}`;
+        
+        // Navigate using Next.js router
+        router.push(fullUrl);
     };
 
     const handleFilterChange = (newFilters: any) => {
@@ -106,26 +112,16 @@ export default function Page() {
                 </div>
             </section>
 
-            {/* Meet Our People Section - home3.png */}
-            <section className="py-20 bg-gray-50">
+            {/* Meet Our People Section */}
+            <section className="py-20 bg-white">
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-12">
-                        <h2 className="text-4xl font-bold text-gray-800 mb-4">Ingwe Agents - Meet Our People</h2>
+                        <h2 className="text-4xl font-bold text-gray-800 mb-4">Meet Our People</h2>
                         <p className="text-gray-600 max-w-2xl mx-auto">
                             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
                         </p>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {[1, 2, 3, 4].map((agent) => (
-                            <div key={agent} className="bg-white rounded-xl shadow-lg overflow-hidden">
-                                <div className="h-64 bg-gray-200"></div>
-                                <div className="p-6 text-center">
-                                    <h3 className="text-xl font-medium text-gray-800 mb-2">Tim Smet</h3>
-                                    <p className="text-gray-600">Agent</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    <AgentCarousel />
                 </div>
             </section>
 
